@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import * as Speech from 'expo-speech';
-import type { Feedback } from '../core/types';
+import type { Feedback, QuestionKind } from '../core/types';
 import { Body, Button, Card, Label, Title } from './components';
 import { useTheme } from './theme';
+import { AnswerImprover } from './AnswerImprover.tsx';
 
-export function AnswerFeedback({ feedback }: { feedback: Feedback }) {
+export function AnswerFeedback({ feedback, kind }: { feedback: Feedback; kind: QuestionKind }) {
   const { colors } = useTheme();
+  const [showScaffold, setShowScaffold] = useState(false);
   useEffect(() => () => { void Speech.stop(); }, []);
   const star = feedback.star;
   const spoken = [feedback.explanation, ...feedback.improvements, ...(star ? Object.entries(star).map(([part, guidance]) => `${part}. ${guidance}`) : [])].join(' ');
@@ -20,5 +22,7 @@ export function AnswerFeedback({ feedback }: { feedback: Feedback }) {
     {star && <View style={{ gap: 16, paddingTop: 12 }}><Title small>Your STAR story</Title>{Object.entries(star).map(([part, guidance]) => <View key={part} style={{ gap: 6 }}><Label>{part.charAt(0).toUpperCase() + part.slice(1)}</Label><Body>{guidance}</Body></View>)}</View>}
     <Button title="Hear coach feedback" secondary onPress={() => { void Speech.stop().then(() => Speech.speak(spoken, { rate: 0.95 })); }} />
     <Button title="Stop speaking" secondary onPress={() => { void Speech.stop(); }} />
+    <Button title={showScaffold ? 'Hide improvement scaffold' : 'Show improvement scaffold'} secondary onPress={() => setShowScaffold(v => !v)} />
+    {showScaffold && <AnswerImprover feedback={feedback} kind={kind} />}
   </Card>;
 }
