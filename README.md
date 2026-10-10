@@ -155,7 +155,7 @@ docs/                      Guides and notes
 **Commands**
 
 ```bash
-npm test                   # deterministic tests, no network, no live AI (163 passing)
+npm test                   # deterministic tests, no network, no live AI (169 passing)
 npm run typecheck          # tsc --noEmit
 npm run check:ai           # one live grading call with fictional data
 npm run check:environment  # Node 24 and SQLite check

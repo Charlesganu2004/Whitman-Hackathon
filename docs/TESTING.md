@@ -90,7 +90,7 @@ These checks were run on 2026-10-10 on a Windows 11 development machine. The lis
 - Three skills are tracked: Communication, Technical discussion, Coding. A hint costs 10 evaluation points on that answer (at most 3 hints); pass, fail and unlock still use the raw grade.
 - The Roadmap tab is a draggable road map (a real road drawn from Views, sideways native scroll, minimap, compass). The background moves with parallax. Scroll bars are hidden everywhere.
 - http://localhost:8081/iphone.html (public/iphone.html) shows the app inside an iPhone frame for desktop previews.
-- Tests: 163 passing and typecheck clean.
+- Tests: 169 passing and typecheck clean.
 
 Built, with automated tests. Still to check on a phone:
 
@@ -117,7 +117,7 @@ npm run check:environment
 Measured during the documentation pass on 2026-10-10:
 
 - `npm run typecheck` exited 0.
-- `npm test`: one run passed all 163 tests with no failures. The count rises as tests are added, so run the command for the current number. One earlier run, made while test files were being edited, failed one test in `tests/resume.test.mjs`: "PDF extraction timed out" where the test expected a rejection mentioning "at most 10 pages". The next run passed. The cause has not been investigated.
+- `npm test`: one run passed all 169 tests with no failures. The count rises as tests are added, so run the command for the current number. One earlier run, made while test files were being edited, failed one test in `tests/resume.test.mjs`: "PDF extraction timed out" where the test expected a rejection mentioning "at most 10 pages". The next run passed. The cause has not been investigated.
 - `npm run check:environment` printed PASS on Node v24.15.0 with SQLite 3.51.3.
 - `npm run check:ai` and `npm run demo` were not run in the documentation pass. One calls a live provider and the other starts servers.
 

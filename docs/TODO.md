@@ -4,6 +4,8 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 
 ## Done
 
+- [x] App shielding policy: chosen apps lock by default and open only during an earned break (`src/core/focusPolicy.ts`, six tests). Applies in the native iPhone build only; the on-device check is still open under "Needs a physical iPhone".
+
 ### App
 
 - [x] Expo SDK 57 app on React Native 0.86 and react-native-web 0.21, written in TypeScript (`package.json`)
@@ -64,9 +66,9 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 ### Tooling and tests
 
 - [x] `npm run typecheck` (`tsc --noEmit`) passes
-- [x] `npm test` passes with 163 tests in the 12 files under `tests/`. The suite makes no live AI calls
+- [x] `npm test` passes with 169 tests in the 12 files under `tests/`. The suite makes no live AI calls
 - [x] `npm run check:ai` (`scripts/check-ai.mjs`): one live grading call with fictional data. Rubric mode sends nothing, and the key is never printed
-- [x] Local integration receipt dated October 10, 2026, in `docs/TESTING.md` (163 passing)
+- [x] Local integration receipt dated October 10, 2026, in `docs/TESTING.md` (169 passing)
 - [x] GitHub Actions workflow `.github/workflows/verify.yml`. The Ubuntu job runs the environment check, typecheck, tests, `expo install --check`, web and iOS export, and plugin checks. The macOS job runs `expo prebuild` and the native config check; it does not compile Swift
 - [x] GitHub Actions baseline run 38027167712 is recorded in `docs/TESTING.md`
 - [x] Dependency audit, October 10, 2026: 15 high-severity npm audit entries remain, all transitive in Expo and Metro packages, with no compatible patched release (lead's check)
@@ -100,7 +102,7 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
   - [x] `docs/PLAN.md` no longer names Groq and OpenAI as the provider choice without NVIDIA.
   - [ ] `docs/IPHONE.md` line 7 says to set `EXPO_PUBLIC_API_URL`
   - [ ] `docs/GROQ-HACKATHON.md` line 3 says to start with a free Groq account
-  - [ ] `docs/TESTING.md` 2026-10-10 receipt now reads 163 passing (lines 93 and 120). Re-run `npm test`, add a dated receipt with the count it shows, then check this box.
+  - [ ] `docs/TESTING.md` 2026-10-10 receipt now reads 169 passing (lines 93 and 120). Re-run `npm test`, add a dated receipt with the count it shows, then check this box.
 
 ## Mac team: before the demo
 
