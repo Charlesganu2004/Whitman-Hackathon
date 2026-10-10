@@ -8,9 +8,9 @@ Unscroll swaps your next scroll for a short interview with Jarvis, an AI intervi
 
 ## The film
 
-[![Watch the Unscroll launch film](docs/media/unscroll-ad-poster.jpg)](docs/media/unscroll-ad.mp4)
+[![Watch the Unscroll launch film on YouTube](docs/media/unscroll-ad-poster.jpg)](https://youtu.be/fKccxDHB6GI)
 
-**Watch:** [1080p](docs/media/unscroll-ad.mp4) · [4K](docs/media/unscroll-ad-4k.mp4) · [download the 4K file](https://github.com/Charlesganu2004/Whitman-Hackathon/raw/main/docs/media/unscroll-ad-4k.mp4) · [4K poster](docs/media/unscroll-ad-poster.jpg) · [run the demo](docs/DEMO.md)
+**Watch:** [YouTube](https://youtu.be/fKccxDHB6GI) · [1080p](docs/media/unscroll-ad.mp4) · [4K](docs/media/unscroll-ad-4k.mp4) · [download the 4K file](https://github.com/Charlesganu2004/Whitman-Hackathon/raw/main/docs/media/unscroll-ad-4k.mp4) · [4K poster](docs/media/unscroll-ad-poster.jpg) · [run the demo](docs/DEMO.md)
 
 The launch film was drawn, scored and narrated entirely in code: eight scenes built with Remotion, a synthesised soundtrack and a generated narrator, all in [marketing/ad](marketing/ad). Watch it in [1080p](docs/media/unscroll-ad.mp4) or [4K](docs/media/unscroll-ad-4k.mp4).
 
