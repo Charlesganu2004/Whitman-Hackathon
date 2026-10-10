@@ -7,6 +7,9 @@ const FILM_SECONDS = 39.6;
 const GAP = 0.15;
 const MODEL = process.env.GROQ_TTS_MODEL || 'canopylabs/orpheus-v1-english';
 const VOICE = process.env.NARRATOR_VOICE || 'troy';
+// One vocal direction for the whole read. Orpheus takes it as a bracketed word at the start of the text.
+const STYLE = (process.env.NARRATOR_STYLE ?? 'cheerful').toLowerCase().replace(/[^a-z ]/g, '').trim();
+const DIRECTION = STYLE ? `[${STYLE}] ` : '';
 
 // Target start times follow the captions in src/Film.tsx, so the voice says what the screen shows.
 const LINES = [
@@ -41,8 +44,9 @@ function wavSeconds(buffer) {
   return 0;
 }
 
-async function speak(text) {
-  if (text.length > 200) throw new Error(`Line is ${text.length} characters; the limit is 200.`);
+async function speak(line) {
+  const text = DIRECTION + line;
+  if (text.length > 200) throw new Error(`Line is ${text.length} characters with its direction; the limit is 200.`);
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const response = await fetch('https://api.groq.com/openai/v1/audio/speech', {
       method: 'POST',
@@ -71,7 +75,15 @@ for (const [index, line] of LINES.entries()) {
   console.log(`${file}  ${at.toFixed(2)}s to ${(at + duration).toFixed(2)}s${drift > 0.05 ? `  (pushed ${drift.toFixed(2)}s later)` : ''}  ${line.text}`);
   await new Promise(resolve => setTimeout(resolve, 1500));
 }
-const end = schedule.at(-1).at + schedule.at(-1).duration;
-if (end > FILM_SECONDS) console.warn(`Narration ends at ${end.toFixed(2)}s, after the film (${FILM_SECONDS}s). Shorten a line.`);
+// A longer read can run past the end. Pull lines earlier from the back, each only as far as the gap before it allows.
+let limit = FILM_SECONDS - 0.05;
+for (let index = schedule.length - 1; index >= 0; index -= 1) {
+  const line = schedule[index];
+  if (line.at + line.duration > limit) line.at = Number(Math.max(0, limit - line.duration).toFixed(2));
+  limit = line.at - GAP;
+}
+const overlap = schedule.some((line, index) => index > 0 && line.at < schedule[index - 1].at + schedule[index - 1].duration);
+if (overlap) console.warn('The lines do not fit in the film without overlapping. Shorten one.');
+for (const line of schedule) console.log(`final  ${line.at.toFixed(2)}s to ${(line.at + line.duration).toFixed(2)}s  ${line.text}`);
 writeFileSync('src/narration.json', `${JSON.stringify(schedule, null, 2)}\n`);
-console.log(`Wrote src/narration.json with ${schedule.length} lines. Voice: ${VOICE}.`);
+console.log(`Wrote src/narration.json with ${schedule.length} lines. Voice: ${VOICE}${STYLE ? `, ${STYLE}` : ''}.`);

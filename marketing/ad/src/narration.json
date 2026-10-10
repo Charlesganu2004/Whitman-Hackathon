@@ -2,61 +2,61 @@
   {
     "file": "narration-01.wav",
     "at": 0.5,
-    "duration": 3.12,
+    "duration": 2.72,
     "text": "It always starts with one more scroll."
   },
   {
     "file": "narration-02.wav",
     "at": 5.2,
-    "duration": 5.6,
+    "duration": 5.68,
     "text": "Unscroll lets you pick the apps that distract you, and keeps them locked until you pass today's interview."
   },
   {
     "file": "narration-03.wav",
     "at": 12.3,
-    "duration": 4,
+    "duration": 4.8,
     "text": "Meet Jarvis, your AI interviewer. Answer out loud, or type it."
   },
   {
     "file": "narration-04.wav",
-    "at": 17.2,
-    "duration": 2.48,
+    "at": 17.25,
+    "duration": 1.68,
     "text": "You get feedback right away."
   },
   {
     "file": "narration-05.wav",
-    "at": 19.83,
-    "duration": 3.2,
+    "at": 19.8,
+    "duration": 2.8,
     "text": "Every answer is scored on three skills."
   },
   {
     "file": "narration-06.wav",
     "at": 23.2,
-    "duration": 4.4,
+    "duration": 3.04,
     "text": "No skipping. Feedback, then a different question."
   },
   {
     "file": "narration-07.wav",
-    "at": 27.75,
-    "duration": 3.2,
+    "at": 27,
+    "duration": 2.8,
     "text": "Behavioral answers get STAR feedback."
   },
   {
     "file": "narration-08.wav",
-    "at": 31.1,
-    "duration": 1.2,
+    "at": 30.4,
+    "duration": 1.6,
     "text": "Break earned."
   },
   {
     "file": "narration-09.wav",
-    "at": 32.45,
-    "duration": 3.2,
+    "at": 32.15,
+    "duration": 2.32,
     "text": "Every step, closer to ready."
   },
   {
     "file": "narration-10.wav",
-    "at": 35.8,
-    "duration": 3.84,
+    "at": 35.31,
+    "duration": 4.24,
     "text": "Unscroll. Less scrolling. More becoming."
   }
 ]
