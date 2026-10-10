@@ -10,7 +10,7 @@ Unscroll swaps your next scroll for a short interview with Jarvis, an AI intervi
 
 [![Watch the Unscroll launch film](docs/media/unscroll-ad-poster.jpg)](docs/media/unscroll-ad.mp4)
 
-The launch film was drawn and scored entirely in code: eight scenes built with Remotion and a synthesised soundtrack, all in [marketing/ad](marketing/ad).
+The launch film was drawn, scored and narrated entirely in code: eight scenes built with Remotion, a synthesised soundtrack and a generated narrator, all in [marketing/ad](marketing/ad). Watch it in [1080p](docs/media/unscroll-ad.mp4) or [4K](docs/media/unscroll-ad-4k.mp4).
 
 ## What it is
 
@@ -175,7 +175,7 @@ npm run render             # 4K master to out/unscroll-ad-4k.mp4
 npm run audio              # rebuild the soundtrack
 ```
 
-It is authored at 1920 by 1080 and 60 fps. The 4K master stays out of git; the 1080p copy is in `docs/media`.
+It is authored at 1920 by 1080 and 60 fps. Both the 1080p and the 4K cut are in `docs/media`.
 
 ## Honest limits
 

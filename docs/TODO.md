@@ -85,11 +85,11 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 
 ## In progress today
 
-- [ ] Commit and push the working tree so the Mac team can pull it. The working tree has many modified and untracked files that are not committed, so a pull on the Mac would not get them
+- [x] Committed and pushed to `main` on 2026-10-10, merged with the teammate commits that landed the same morning. CI (Verify MVP) passed on the merge.
 - [ ] Voice answer transcript editing: not verified. `src/ui/VoiceAnswer.tsx` has no text input, so the edit path has not been confirmed
 - [ ] Spoken feedback and STAR feedback: STAR wording appears in `src/ui/AnswerFeedback.tsx`, but neither spoken feedback nor STAR feedback has been checked live on a phone
-- [ ] Launch film files: `docs/media/` exists and holds `unscroll-ad.mp4` (1080p), `unscroll-ad-poster.jpg`, `screen-today.jpg`, `screen-jarvis.jpg` and `screen-roadmap.jpg`, not committed yet. There is no teaser GIF and no `screen-evaluation.jpg`. The 4K master stays out of git (`marketing/ad/out/` is git-ignored).
-- [ ] Launch film second cut (in progress today): no film grain, a narrator voice, and a clearer app-locking scene.
+- [x] Launch film files are in `docs/media/`: `unscroll-ad.mp4` (1080p, 60 fps), `unscroll-ad-4k.mp4` (3840 by 2160, 60 fps), `unscroll-ad-poster.jpg`, and the screenshots `screen-today.jpg`, `screen-jarvis.jpg` and `screen-roadmap.jpg`.
+- [x] Launch film second cut: no film grain, a narrator voice (Groq Orpheus, `npm run narration` in `marketing/ad`), no clock in the opening, and app tiles that visibly take a lock badge.
 - [ ] Film timing: scene start times in `marketing/ad/src/Film.tsx` do not match the table in `marketing/ad/SCRIPT.md` for scenes 2 to 4 and 6 to 8. `SCRIPT.md` is the spec, so align the code to it
 - [ ] Refresh stale doc lines (text only):
   - [x] `README.md` no longer tells the reader to set `EXPO_PUBLIC_API_URL`; the app finds the computer itself.

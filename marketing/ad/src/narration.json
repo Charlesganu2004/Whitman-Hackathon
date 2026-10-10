@@ -25,37 +25,37 @@
   },
   {
     "file": "narration-05.wav",
-    "at": 19.88,
+    "at": 19.83,
     "duration": 3.2,
     "text": "Every answer is scored on three skills."
   },
   {
     "file": "narration-06.wav",
-    "at": 23.28,
-    "duration": 4.56,
-    "text": "No skipping. You get feedback, then a different question."
+    "at": 23.2,
+    "duration": 4.4,
+    "text": "No skipping. Feedback, then a different question."
   },
   {
     "file": "narration-07.wav",
-    "at": 28.04,
+    "at": 27.75,
     "duration": 3.2,
     "text": "Behavioral answers get STAR feedback."
   },
   {
     "file": "narration-08.wav",
-    "at": 31.44,
+    "at": 31.1,
     "duration": 1.2,
     "text": "Break earned."
   },
   {
     "file": "narration-09.wav",
-    "at": 32.84,
+    "at": 32.45,
     "duration": 3.2,
     "text": "Every step, closer to ready."
   },
   {
     "file": "narration-10.wav",
-    "at": 36.24,
+    "at": 35.8,
     "duration": 3.84,
     "text": "Unscroll. Less scrolling. More becoming."
   }

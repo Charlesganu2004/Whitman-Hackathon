@@ -46,7 +46,7 @@ The app is named Unscroll. Pink with charcoal replaces the initial forest palett
   - Phone host detection. The app reads the Expo host in `src/services/api.ts` and no longer defaults to `http://localhost:3001` on a phone.
   - `npm run demo` (`scripts/dev.mjs`). It starts the API and Expo together, creates `.env` from `.env.example` when `.env` is missing, and prints whether AI feedback and voice are on.
   - An iPhone frame preview at `public/iphone.html`, for desktop previews while the Expo web server runs.
-  - The launch film is built in code with Remotion in `marketing/ad`. It has eight scenes, an original synthesized soundtrack, 60 fps, a 1920 by 1080 authored composition, and a 4K render setting. Final renders, the poster and the three app screenshots are in `docs/media/` but not committed yet. There is no teaser GIF.
+  - The launch film is built in code with Remotion in `marketing/ad`: eight scenes, a synthesised score, a generated narrator, 60 fps, authored at 1920 by 1080 and rendered at 3840 by 2160. The 1080p and 4K cuts, the poster and three app screenshots are in `docs/media/`.
 - Built, with automated tests. Phone checks still to do: saving the typed answer on "Save and leave"; the end-of-session recap; the earned-break start guard; missed-answer feedback in the recap; the offline banner with automatic retry.
 - Open, carried over from earlier integration. These were not re-verified on 2026-10-10.
   - Welcome animation, four-step plan review (the four-step survey was part of the earlier browser check in `TESTING.md`), expanded focus app choices, and roadmap across all goals.

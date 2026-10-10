@@ -24,7 +24,7 @@ For a desktop preview, run `npm run web` and open `http://localhost:8081/iphone.
 - **Accessibility and device layout:** Test VoiceOver, Dynamic Type, Reduce Motion, keyboard behavior, small and large iPhones, and dark/light system changes. Browser phone-size checks do not replace these tests.
 - **Dependency maintenance:** The final local npm audit has 15 high-severity transitive Expo/Metro entries. See [INTAKE.md](INTAKE.md); compatible fixes were not available in the checked dependency set. Recheck before public deployment.
 - **Built, with automated tests; phone checks still to do:** saving the typed answer on "Save and leave", the end-of-session recap, the earned-break start guard, missed-answer feedback in the recap, and the offline banner with automatic retry. See [PLAN.md](PLAN.md).
-- **Launch film:** built in `marketing/ad` with Remotion. The 1080p film, poster and three app screenshots are in `docs/media/` but not committed yet, and there is no teaser GIF. A second cut is in progress today. The 4K master stays out of git, because `marketing/ad/out/` is ignored.
+- **Launch film:** built in `marketing/ad` with Remotion and committed in `docs/media/` as `unscroll-ad.mp4` (1080p) and `unscroll-ad-4k.mp4` (3840 by 2160), with the poster and three app screenshots. This is the second cut: no film grain, a generated narrator over the synthesised score, and a clearer app-locking scene. See `marketing/ad/README.md` to render it again.
 
 ## Next improvements after the demo
 

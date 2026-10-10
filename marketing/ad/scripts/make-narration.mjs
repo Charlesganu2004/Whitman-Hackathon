@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 
 const FILM_SECONDS = 39.6;
-const GAP = 0.2;
+const GAP = 0.15;
 const MODEL = process.env.GROQ_TTS_MODEL || 'canopylabs/orpheus-v1-english';
 const VOICE = process.env.NARRATOR_VOICE || 'troy';
 
@@ -15,11 +15,11 @@ const LINES = [
   { at: 12.3, text: 'Meet Jarvis, your AI interviewer. Answer out loud, or type it.' },
   { at: 17.2, text: 'You get feedback right away.' },
   { at: 19.8, text: 'Every answer is scored on three skills.' },
-  { at: 23.2, text: 'No skipping. You get feedback, then a different question.' },
-  { at: 26.8, text: 'Behavioral answers get STAR feedback.' },
-  { at: 30.0, text: 'Break earned.' },
-  { at: 32.5, text: 'Every step, closer to ready.' },
-  { at: 36.0, text: 'Unscroll. Less scrolling. More becoming.' },
+  { at: 23.2, text: 'No skipping. Feedback, then a different question.' },
+  { at: 27.0, text: 'Behavioral answers get STAR feedback.' },
+  { at: 30.4, text: 'Break earned.' },
+  { at: 32.0, text: 'Every step, closer to ready.' },
+  { at: 35.6, text: 'Unscroll. Less scrolling. More becoming.' },
 ];
 
 const key = (process.env.GROQ_API_KEY || '').trim();
