@@ -23,6 +23,7 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 - [x] Streak, study minutes, accuracy, and technical and behavioral scores kept in the stats (`src/core/engine.ts`)
 - [x] Focus app list with 12 apps (`src/ui/FocusApps.tsx`). Expo Go is practice mode only; real shielding needs the signed iOS build
 - [x] Screen Time module source: Swift Family Controls code in `modules/interview-focus/ios/`, and the Expo config plugin `plugins/withInterviewFocus.cjs`, wired from `app.config.ts`. Not compiled and not tested on a device yet
+- [x] Offline state with automatic retry: `App.tsx` tracks `offline`, `src/ui/OfflineBanner.tsx` is rendered at App.tsx:332, and `src/ui/StartControl.tsx` uses the reason text from `src/core/connection.ts`. Retry timing (3, 6 and 12 seconds, then every 20 seconds) is covered by `tests/connection.test.mjs`. Phone check still to do: reconnect on a device.
 
 ### AI and voice
 
@@ -40,6 +41,10 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 - [x] A hint costs 10 evaluation points on that answer (`HINT_COST` in `src/core/skills.ts`). Pass, fail and unlock still use the raw grade (`src/core/engine.ts`)
 - [x] Three skill standings: Communication, Technical discussion and Coding (`src/core/skills.ts`, `src/ui/SkillStandings.tsx`)
 - [x] Live run: a graded answer came back in 2.6 seconds with a score of 90 and one hint. It counted as 80 toward Technical discussion, which showed Expert, 80 out of 100, based on 1 answer (lead, October 10, 2026)
+- [x] Draft saving: the composer keeps the typed answer as a draft (`src/core/draft.ts`, used through `src/ui/useDraft.ts` in `src/ui/InterviewChat.tsx`), covered by `tests/draft.test.mjs`. Phone check still to do: that "Save and leave interview" keeps the typed answer.
+- [x] End-of-session recap: `summarizeSession` in `src/core/recap.ts` builds weak topics and next steps; `SessionRecap` (`src/ui/SessionRecap.tsx`) is rendered at App.tsx:300; covered by `tests/recap.test.mjs`. Phone check still to do.
+- [x] Break guard: the engine refuses a new daily interview during an earned break (`startSession` in `src/core/engine.ts`, HTTP 409). `startDecision` in `src/core/break.ts` drives the start control (`src/ui/StartControl.tsx`, used by `PracticeHub.tsx`), covered by `tests/break.test.mjs`. Phone check still to do.
+- [x] Missed-answer feedback kept for the recap: `acknowledgeReview` in `src/core/engine.ts` keeps the replaced question's title, topic and feedback (`MISSED_LIMIT` is 20); the recap lists them, marked "Swapped after a miss" (`src/ui/SessionRecap.tsx`). Covered by tests. Phone check still to do.
 
 ### Design and motion
 
@@ -59,9 +64,9 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 ### Tooling and tests
 
 - [x] `npm run typecheck` (`tsc --noEmit`) passes
-- [x] `npm test` passes with 119 or more tests in the 11 files under `tests/`. The suite makes no live AI calls
+- [x] `npm test` passes with 163 tests in the 12 files under `tests/`. The suite makes no live AI calls
 - [x] `npm run check:ai` (`scripts/check-ai.mjs`): one live grading call with fictional data. Rubric mode sends nothing, and the key is never printed
-- [x] Local integration receipt dated October 10, 2026, in `docs/TESTING.md` (its test count is out of date; see In progress today)
+- [x] Local integration receipt dated October 10, 2026, in `docs/TESTING.md` (163 passing)
 - [x] GitHub Actions workflow `.github/workflows/verify.yml`. The Ubuntu job runs the environment check, typecheck, tests, `expo install --check`, web and iOS export, and plugin checks. The macOS job runs `expo prebuild` and the native config check; it does not compile Swift
 - [x] GitHub Actions baseline run 38027167712 is recorded in `docs/TESTING.md`
 - [x] Dependency audit, October 10, 2026: 15 high-severity npm audit entries remain, all transitive in Expo and Metro packages, with no compatible patched release (lead's check)
@@ -74,32 +79,28 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 
 ### Docs
 
-- [x] Docs in place: `README.md`, `docs/DESIGN.md`, `docs/GROQ-HACKATHON.md`, `docs/INTAKE.md`, `docs/IPHONE.md`, `docs/NVIDIA.md`, `docs/PLAN.md`, `docs/TEAM-HANDOFF.md`, `docs/TESTING.md` and `marketing/ad/SCRIPT.md`. Some lines are stale; see In progress today
+- [x] Docs in place: `README.md`, `docs/DEMO.md`, `docs/DESIGN.md`, `docs/GROQ-HACKATHON.md`, `docs/INTAKE.md`, `docs/IPHONE.md`, `docs/NVIDIA.md`, `docs/PLAN.md`, `docs/TEAM-HANDOFF.md`, `docs/TESTING.md` and `marketing/ad/SCRIPT.md`. Some lines are stale; see In progress today
 - [x] `docs/NVIDIA.md` covers the NVIDIA key, the model, the rate limit and the trial terms
 - [x] `docs/TESTING.md` holds the Expo Go acceptance cases and the native focus acceptance checklist
 
 ## In progress today
 
 - [ ] Commit and push the working tree so the Mac team can pull it. The working tree has many modified and untracked files that are not committed, so a pull on the Mac would not get them
-- [ ] Draft saving: the composer keeps the typed answer as a draft (`src/core/draft.ts`, used through `src/ui/useDraft.ts` in `src/ui/InterviewChat.tsx`). Not verified: that "Save and leave interview" keeps the typed answer
-- [ ] End-of-session recap: `summarizeSession` in `src/core/recap.ts` builds weak topics and next steps, and has tests (`tests/recap.test.mjs`). No screen calls it yet, so the app shows no recap
-- [ ] Break guard: the engine already refuses a new daily interview during an earned break (`startSession` in `src/core/engine.ts`, HTTP 409). The screen logic in `src/core/break.ts` (`startDecision`, `breakMinutesLeft`) has tests, but no screen imports it yet
-- [ ] Missed-answer feedback kept for the recap: `acknowledgeReview` in `src/core/engine.ts` keeps the replaced question's title, topic and feedback for the end of the session (`MISSED_LIMIT` is 20). The recap does not show them yet
-- [ ] Offline state with automatic retry: `App.tsx` tracks `offline`, and `src/ui/StartControl.tsx` uses the reason text from `src/core/connection.ts`. Retry timing exists in `src/core/connection.ts` (3, 6 and 12 seconds, then every 20 seconds). No offline banner was found in the screen code, and the automatic retry is not verified on a device
 - [ ] Voice answer transcript editing: not verified. `src/ui/VoiceAnswer.tsx` has no text input, so the edit path has not been confirmed
 - [ ] Spoken feedback and STAR feedback: STAR wording appears in `src/ui/AnswerFeedback.tsx`, but neither spoken feedback nor STAR feedback has been checked live on a phone
-- [ ] Launch film files: after rendering, add `docs/media/unscroll-ad.mp4` (1080p, committed), `docs/media/unscroll-ad-poster.jpg`, `docs/media/unscroll-ad-teaser.gif`, `docs/media/screen-today.jpg`, `docs/media/screen-jarvis.jpg`, `docs/media/screen-evaluation.jpg` and `docs/media/screen-roadmap.jpg`. `docs/media/` does not exist yet. The 4K master stays out of git (`marketing/ad/out/` is git-ignored)
+- [ ] Launch film files: `docs/media/` exists and holds `unscroll-ad.mp4` (1080p), `unscroll-ad-poster.jpg`, `screen-today.jpg`, `screen-jarvis.jpg` and `screen-roadmap.jpg`, not committed yet. There is no teaser GIF and no `screen-evaluation.jpg`. The 4K master stays out of git (`marketing/ad/out/` is git-ignored).
+- [ ] Launch film second cut (in progress today): no film grain, a narrator voice, and a clearer app-locking scene.
 - [ ] Film timing: scene start times in `marketing/ad/src/Film.tsx` do not match the table in `marketing/ad/SCRIPT.md` for scenes 2 to 4 and 6 to 8. `SCRIPT.md` is the spec, so align the code to it
 - [ ] Refresh stale doc lines (text only):
-  - [ ] `README.md` line 69 says to set `EXPO_PUBLIC_API_URL`; the app now finds the computer itself
-  - [ ] `README.md` line 73 says Groq is the only key for transcription and feedback; NVIDIA and OpenAI also grade
-  - [ ] `README.md` line 85 presents the Groq free plan as the start; NVIDIA is now a provider
-  - [ ] `docs/TEAM-HANDOFF.md` line 13 says to type the Mac's Wi-Fi IPv4 address; the app finds it now
-  - [ ] `docs/TEAM-HANDOFF.md` line 18 names a Groq key as the only live AI path
-  - [ ] `docs/PLAN.md` line 37 names Groq and OpenAI as the provider choice and leaves out NVIDIA
+  - [x] `README.md` no longer tells the reader to set `EXPO_PUBLIC_API_URL`; the app finds the computer itself.
+  - [x] `README.md` no longer says Groq is the only key for transcription and feedback.
+  - [x] `README.md` no longer presents the Groq free plan as the start.
+  - [x] `docs/TEAM-HANDOFF.md` line 13 no longer asks for the IPv4 address; line 15 offers it only if the app cannot reach the server.
+  - [x] `docs/TEAM-HANDOFF.md` line 18 no longer names a Groq key as the only live AI path.
+  - [x] `docs/PLAN.md` no longer names Groq and OpenAI as the provider choice without NVIDIA.
   - [ ] `docs/IPHONE.md` line 7 says to set `EXPO_PUBLIC_API_URL`
   - [ ] `docs/GROQ-HACKATHON.md` line 3 says to start with a free Groq account
-  - [ ] `docs/TESTING.md` line 71 keeps a receipt with 42 tests; add a new dated receipt with the current `npm test` count and leave the old one as a record
+  - [ ] `docs/TESTING.md` 2026-10-10 receipt now reads 163 passing (lines 93 and 120). Re-run `npm test`, add a dated receipt with the count it shows, then check this box.
 
 ## Mac team: before the demo
 
@@ -126,6 +127,11 @@ Status as of October 10, 2026. A box is checked only when the code or a live che
 - [ ] Try light and dark, then check the profile photo and one accent change
 - [ ] Pull the plug on the server once. Run the API as `npm run server` in its own terminal, since stopping the API inside `npm run demo` also stops Expo. With the app open, stop that API, watch what the app shows, then run `npm run server` again
 - [ ] Play the film: `cd marketing/ad`, run `npm run studio`, and open the `UnscrollAd` composition
+- [ ] Draft saving: check on an iPhone
+- [ ] End-of-session recap: check on an iPhone
+- [ ] Earned-break start guard: check on an iPhone
+- [ ] Missed-answer feedback in the recap: check on an iPhone
+- [ ] Offline banner and automatic retry: check on an iPhone
 
 ## Needs a physical iPhone and the native build
 

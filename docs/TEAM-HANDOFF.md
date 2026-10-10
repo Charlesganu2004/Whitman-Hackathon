@@ -23,11 +23,20 @@ For a desktop preview, run `npm run web` and open `http://localhost:8081/iphone.
 - **Actual iPhone blocking:** Expo Go cannot shield Instagram or other apps. Use the custom development build described in [IPHONE.md](IPHONE.md), compile Swift on Mac, sign with the required Family Controls capability, then test authorization, app picker, shields, expiry, emergency release, foreground reconciliation, and relaunch. Do not present a JavaScript export or fixture check as physical-device blocking evidence.
 - **Accessibility and device layout:** Test VoiceOver, Dynamic Type, Reduce Motion, keyboard behavior, small and large iPhones, and dark/light system changes. Browser phone-size checks do not replace these tests.
 - **Dependency maintenance:** The final local npm audit has 15 high-severity transitive Expo/Metro entries. See [INTAKE.md](INTAKE.md); compatible fixes were not available in the checked dependency set. Recheck before public deployment.
-- **In progress, not verified:** saving the typed answer on "Save and leave", an end-of-session recap with weak topics and next steps, a guard for starting practice during an earned break, keeping missed-answer feedback for the recap, and a designed offline state with automatic retry. See [PLAN.md](PLAN.md).
-- **Launch film:** built in `marketing/ad` with Remotion. The final 1080p film, poster, teaser GIF and app screenshots are not in the repository yet. The 4K master stays out of git, because `marketing/ad/out/` is ignored.
+- **Built, with automated tests; phone checks still to do:** saving the typed answer on "Save and leave", the end-of-session recap, the earned-break start guard, missed-answer feedback in the recap, and the offline banner with automatic retry. See [PLAN.md](PLAN.md).
+- **Launch film:** built in `marketing/ad` with Remotion. The 1080p film, poster and three app screenshots are in `docs/media/` but not committed yet, and there is no teaser GIF. A second cut is in progress today. The 4K master stays out of git, because `marketing/ad/out/` is ignored.
 
 ## Next improvements after the demo
 
 Prioritize a genuinely isolated code judge for objective tests, deeper question banks for each major, more evidence-based company preparation, notifications for chosen study times, and secure hosted API infrastructure. The current code checker accepts a limited static grammar and AI review; it does not execute student code. Keep original questions and link to NeetCode, LeetCode, and HackerRank resources without copying proprietary material.
 
 Use GitHub Actions for repeatable checks, then attach physical-device and live-provider results to [TESTING.md](TESTING.md). Inspect any failing CI job before treating the handoff as verified.
+
+## Merge note, 2026-10-10
+
+Two lines of work met on `main` today. Ayimhi's commits (draft persistence, break guard, offline banner, session summary, answer improver) were written against the earlier question screen. Charles's commit replaced that screen with the conversation with Jarvis and built the same safeguards into it. The merge keeps one implementation of each so the app has a single behaviour:
+
+- Drafts: one `readDraft`, `writeDraft`, `clearDraft` API in `src/services/cache.*`, keyed by session and question. Ayimhi's `tests/cache.test.mjs` runs against it and passes.
+- Running app: `App.tsx` uses `InterviewChat`, `SessionRecap`, `StartControl` and `OfflineBanner` from `src/ui`.
+- Kept in the tree but not wired into a screen yet: `src/ui/SessionSummary.tsx` and `src/ui/AnswerImprover.tsx`. The answer improver is the piece with no equivalent in the new flow; adding it to the feedback step of the conversation is a good next task.
+- `docs/HACKATHON-REVIEW.md` and `.agents/tasks/plan.md` are Ayimhi's and are unchanged.

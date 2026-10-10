@@ -52,12 +52,12 @@ Record the commit, macOS version, Node version, iPhone model/iOS version, Expo G
 - Complete placement with exactly two technical and two behavioral questions. Confirm the resulting starting level and dashboard are saved after reopening the app. Technical responses are reviewed as text; submitted code is not executed.
 - Start a daily interview. Confirm beginner through advanced sessions contain four to six technical questions and two behavioral questions according to the study target; expert/master sessions contain one hard technical question and two behavioral questions. Use accounts placed at the required level rather than changing database rows during the device run.
 - Submit an incorrect daily answer. Confirm no earned access is granted, feedback explains what was missing, review must be acknowledged, and a different question appears. Pass the replacement and remaining questions; confirm the configured earned access window appears. In Expo Go this is a practice result: other apps remain accessible throughout.
-- Save and leave an interview, reopen the app and resume the current question. Confirm an answer cannot be submitted twice by repeated taps or that session progress cannot skip a required review. (In progress: not verified on 2026-10-10.)
+- Save and leave an interview, reopen the app and resume the current question. Confirm an answer cannot be submitted twice by repeated taps or that session progress cannot skip a required review. (Built, covered by tests/draft.test.mjs; phone check still to do.)
 - With a valid server AI key, record both behavioral answers, allow microphone access, edit the returned transcript and submit. Confirm live feedback is shown. Deny microphone access in a separate run and confirm a useful error plus typed-answer access. Confirm the app describes rubric mode when AI is not configured.
 - Open a lesson, read it and try an incorrect knowledge check. Confirm it does not count as complete. Pass the check after the reading interval; confirm completion persists and reopening the completed lesson does not add duplicate progress.
 - Complete practice or a lesson and inspect the flame streak, activity, accuracy, technical/behavioral scores and study minutes. Repeat activity on the same day and confirm the streak does not gain another day. Check the account's local date boundary with server tests; do not claim a multi-day physical-device streak from one same-day run.
 - Change practice preferences. Confirm new settings affect the next interview and preserve an already started interview.
-- Stop the server or disconnect Wi-Fi after a cached sign-in. Reopen the app, confirm the offline message and disabled submissions, reconnect, then confirm progress refreshes. Test a missing or unreachable server address at sign-in and verify the connection error is visible. (In progress: the designed offline state with automatic retry is not verified yet.)
+- Stop the server or disconnect Wi-Fi after a cached sign-in. Reopen the app, confirm the offline message and disabled submissions, reconnect, then confirm progress refreshes. Test a missing or unreachable server address at sign-in and verify the connection error is visible. (Built: offline banner and automatic retry, covered by tests/connection.test.mjs; phone check still to do.)
 - Test small-screen layout, keyboard overlap, scrolling, text scaling and VoiceOver labels on authentication, question submission, lessons and settings.
 
 ## Separate native focus acceptance
@@ -90,15 +90,15 @@ These checks were run on 2026-10-10 on a Windows 11 development machine. The lis
 - Three skills are tracked: Communication, Technical discussion, Coding. A hint costs 10 evaluation points on that answer (at most 3 hints); pass, fail and unlock still use the raw grade.
 - The Roadmap tab is a draggable road map (a real road drawn from Views, sideways native scroll, minimap, compass). The background moves with parallax. Scroll bars are hidden everywhere.
 - http://localhost:8081/iphone.html (public/iphone.html) shows the app inside an iPhone frame for desktop previews.
-- Tests: 119 passing and typecheck clean at the time of writing.
+- Tests: 163 passing and typecheck clean.
 
-In progress, not verified. These are open and must not be read as done:
+Built, with automated tests. Still to check on a phone:
 
-- Saving the typed answer on "Save and leave".
-- An end-of-session recap with weak topics and next steps.
-- A guard for starting practice during an earned break.
-- Keeping missed-answer feedback for the recap.
-- A designed offline state with automatic retry.
+- Saving the typed answer on "Save and leave" (built, covered by tests/draft.test.mjs; phone check still to do).
+- An end-of-session recap with weak topics and next steps (built, covered by tests/recap.test.mjs; phone check still to do).
+- A guard for starting practice during an earned break (built, covered by tests/break.test.mjs; phone check still to do).
+- Keeping missed-answer feedback for the recap (built, covered by tests; phone check still to do).
+- An offline banner with automatic retry (built, covered by tests/connection.test.mjs; phone check still to do).
 
 ### Commands to reproduce
 
@@ -117,7 +117,7 @@ npm run check:environment
 Measured during the documentation pass on 2026-10-10:
 
 - `npm run typecheck` exited 0.
-- `npm test`: one run passed all 155 tests with no failures. The count rises as tests are added, so run the command for the current number. One earlier run, made while test files were being edited, failed one test in `tests/resume.test.mjs`: "PDF extraction timed out" where the test expected a rejection mentioning "at most 10 pages". The next run passed. The cause has not been investigated.
+- `npm test`: one run passed all 163 tests with no failures. The count rises as tests are added, so run the command for the current number. One earlier run, made while test files were being edited, failed one test in `tests/resume.test.mjs`: "PDF extraction timed out" where the test expected a rejection mentioning "at most 10 pages". The next run passed. The cause has not been investigated.
 - `npm run check:environment` printed PASS on Node v24.15.0 with SQLite 3.51.3.
 - `npm run check:ai` and `npm run demo` were not run in the documentation pass. One calls a live provider and the other starts servers.
 
@@ -145,11 +145,11 @@ Voice
 - [ ] Deny microphone access. A useful error appears and typed answers still work.
 - [ ] Replay a question and note whether the second playback starts without a new request. Audio is cached per question.
 
-Offline state (in progress)
+Offline state (built; phone check still to do)
 
 - [ ] Stop the server while signed in. Record exactly what the screen shows. Expected: an offline message and disabled submissions.
 - [ ] Restart the server and record whether the app reconnects and refreshes progress without a manual step.
-- [ ] Do not mark the offline state as passed until the designed offline state and automatic retry are in place and verified.
+- [ ] Mark the offline state as passed only after the phone run above is recorded.
 
 ### Limits that apply to these results
 

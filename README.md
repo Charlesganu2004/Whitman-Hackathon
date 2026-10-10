@@ -24,7 +24,6 @@ The launch film was drawn and scored entirely in code: eight scenes built with R
   <tr>
     <td align="center" valign="top" width="25%"><img src="docs/media/screen-today.jpg" alt="The Today screen of Unscroll" width="180"><br><b>Today</b><br>Start the day's interview and see your streak.</td>
     <td align="center" valign="top" width="25%"><img src="docs/media/screen-jarvis.jpg" alt="A conversation with Jarvis" width="180"><br><b>Jarvis</b><br>Ask, take a hint, answer by typing or voice.</td>
-    <td align="center" valign="top" width="25%"><img src="docs/media/screen-evaluation.jpg" alt="The evaluation of an answer" width="180"><br><b>Evaluation</b><br>Your grade, what worked, what to fix.</td>
     <td align="center" valign="top" width="25%"><img src="docs/media/screen-roadmap.jpg" alt="The draggable road map" width="180"><br><b>Roadmap</b><br>A road you drag across five levels.</td>
   </tr>
 </table>
@@ -154,7 +153,7 @@ docs/                      Guides and notes
 **Commands**
 
 ```bash
-npm test                   # deterministic tests, no network, no live AI (119 or more)
+npm test                   # deterministic tests, no network, no live AI (163 passing)
 npm run typecheck          # tsc --noEmit
 npm run check:ai           # one live grading call with fictional data
 npm run check:environment  # Node 24 and SQLite check
@@ -183,10 +182,10 @@ It is authored at 1920 by 1080 and 60 fps. The 4K master stays out of git; the 1
 - **Expo Go is practice mode.** It cannot block other apps. Shielding needs the signed native iPhone build with Apple Screen Time, and that build has not been tested on a device. See [docs/IPHONE.md](docs/IPHONE.md).
 - **Student code is reviewed, never executed.** Coding answers get static and AI review. There is no code judge.
 - **NVIDIA's free access is rate limited.** Its trial terms cover evaluation and prototyping, not a public launch.
-- **Keys live only in the server's `.env`.** Git ignores that file, so each computer that runs the server needs its own.
+- **Keys are never committed.** They live only in the server's `.env`, which git ignores, so each computer that runs the server needs its own `.env`.
 - **15 high-severity `npm audit` entries** sit in transitive Expo and Metro packages, and no compatible patch exists yet.
 - **Local setup only.** The server speaks plain HTTP on a private network. A public deployment needs HTTPS, a privacy policy, terms and an account review.
-- **In progress, not finished:** saving the typed answer when you tap Save and leave; an end-of-session recap with weak topics and next steps; a guard against starting practice during an earned break; keeping missed-answer feedback for that recap; a designed offline state with automatic retry.
+- **Built, with automated tests; phone checks still to do:** saving the typed answer on Save and leave, the end-of-session recap, the earned-break start guard, missed-answer feedback in the recap, and the offline banner with automatic retry.
 
 Practice here is preparation, not a guarantee of correct code or a job offer. What is left, including device testing, an accessibility audit and live provider testing, is tracked in [docs/TODO.md](docs/TODO.md).
 

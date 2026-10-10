@@ -1,4 +1,4 @@
-import { draftKey, DRAFT_PREFIX } from '../core/draft';
+import { draftKey, DRAFT_PREFIX } from '../core/draft.ts';
 import type { Snapshot } from '../core/types';
 // The browser preview uses browser storage; the phone implementation uses SQLite and SecureStore.
 export async function readSnapshot(): Promise<Snapshot | null> {
