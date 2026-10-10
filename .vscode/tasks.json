@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Unscroll: API", "type": "npm", "script": "server", "isBackground": true, "problemMatcher": [] },
+    { "label": "Unscroll: Expo Go", "type": "npm", "script": "start", "isBackground": true, "problemMatcher": [] },
+    { "label": "Unscroll: TypeScript", "type": "npm", "script": "typecheck", "problemMatcher": "$tsc", "group": "build" },
+    { "label": "Unscroll: tests", "type": "npm", "script": "test", "dependsOn": "Unscroll: TypeScript", "problemMatcher": [], "group": "test" }
+  ]
+}

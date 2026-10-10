@@ -1,0 +1,17 @@
+node_modules/
+node_modules.interrupted-*/
+.expo/
+dist/
+web-build/
+.env
+.env.*
+!.env.example
+server/data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+/ios/
+/android/
+test-results/
+.DS_Store

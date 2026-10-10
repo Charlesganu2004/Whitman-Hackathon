@@ -1,0 +1,68 @@
+name: Verify MVP
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  EXPO_PUBLIC_API_URL: http://127.0.0.1:3001
+  OPENAI_API_KEY: ''
+
+jobs:
+  javascript:
+    name: TypeScript, tests and Expo exports
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install the audited lockfile without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Validate environment script syntax
+        run: node --check scripts/check-environment.mjs
+      - name: Check Node and SQLite
+        run: node scripts/check-environment.mjs
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Run deterministic tests without live AI
+        run: npm test
+      - name: Check Expo Go dependency versions
+        run: npx --no-install expo install --check
+      - name: Export web JavaScript
+        run: npx --no-install expo export --platform web --output-dir dist-web
+      - name: Export iOS JavaScript
+        run: npx --no-install expo export --platform ios --output-dir dist-ios
+      - name: Check native config and autolinking
+        run: node modules/interview-focus/verify-expo-config.cjs
+      - name: Check plugin project fixture
+        run: node modules/interview-focus/verify-plugin.cjs
+
+  ios-project:
+    name: Generate and validate the iOS Xcode project
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Install the audited lockfile without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Generate the actual iOS project without installing pods
+        run: npx --no-install expo prebuild --platform ios --no-install
+      - name: Validate generated host and monitor targets
+        run: node modules/interview-focus/verify-native-config.cjs
