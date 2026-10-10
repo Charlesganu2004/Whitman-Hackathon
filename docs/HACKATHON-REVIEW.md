@@ -88,3 +88,9 @@
 - **Single active session.** The server stores one `activeSession` per profile. Starting a new session while one is active resumes the existing one (the onboarding flow detects and surfaces this). Parallel session support is out of scope.
 - **Resume parsing is server-side heuristic, not ML-based.** The server extracts relevant sentences by keyword matching, not semantic embedding. Highly formatted PDF resumes may lose structure.
 - **Node 24 required for tests locally.** The test runner uses `--experimental-strip-types` which requires Node 24. The local environment runs Node 20; tests pass in CI (GitHub Actions).
+
+---
+
+## 7. Integration Findings (Resolved)
+
+Draft keys are correctly scoped to `accountId + ':' + questionId`, preventing cross-account leakage that was identified during the FEAT-001 review. The break-guard condition (`remaining > 0`) was verified to align exactly with the server's rejection logic, closing the gap where the client could fire a session request the server would deny.
