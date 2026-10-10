@@ -19,16 +19,16 @@ The goal is an Expo application for students that exchanges interview practice f
 
 ## Visual direction
 
-An original calm dashboard for college students. Warm off-white, dark forest text, one green accent, 12/20/28 point corner scale, system sans typography and monospace code. Density 5/10, motion 2/10, variance 3/10. All controls have visible labels and usable touch targets. Empty, error, busy, denial and offline states must be visible.
+An original dashboard for college students, with light/dark/system appearance and one selectable pink, red, blue, or green accent. Native focus artwork and subtle moving backgrounds accompany measured progress. Use a 12/20/28-point corner scale, system typography, and monospace code. All controls have visible labels and usable touch targets. Motion honors Reduce Motion and stops while backgrounded. Empty, error, busy, denial, and offline states stay visible.
 
 ## Verification status
 
-Pending implementation and checks. No physical device or native build has been tested.
+Application and local checks are implemented. The current verification receipt and external prerequisites are tracked in `TESTING.md` and `TODO.md`. Physical-device behavior, native Swift compilation/signing, and live AI still require the Mac/iPhone and provider handoff.
 # Current integration finish list
 
 Profile replaces the Settings label on the bottom bar. A circular photo or initials avatar at the top right opens Profile. The Profile view presents identity, goals, progress, then appearance, study, focus, resume, connection, and account settings. Optional profile photos stay on the current device.
 
-Additional requested scope: twenty major choices, target-company goals used as AI context, a four-question knowledge checkpoint that never unlocks apps, and a five-tab Today/Practice/Learn/Roadmap/Settings navigation. Appearance supports four accents in every mode, with subtle continuous motion respecting Reduce Motion. Lesson coaching, original technical questions, and linked NeetCode/LeetCode/HackerRank resources support learning. Figma iPhone frames and VS Code tasks support the design and development handoff.
+Additional requested scope: twenty major choices, target-company goals used as AI context, a four-question knowledge checkpoint that never unlocks apps, and a five-tab Today/Practice/Learn/Roadmap/Profile navigation. Appearance supports four accents in every mode, with subtle continuous motion respecting Reduce Motion. Lesson coaching, original technical questions, and linked NeetCode/LeetCode/HackerRank resources support learning. Figma iPhone frames and VS Code tasks support the design and development handoff.
 
 The app is named Unscroll. Pink with charcoal replaces the initial forest palette. Light, dark, and system appearance persist on the device. The phone preview uses a 390 by 844 viewport and a 430-point maximum content width.
 

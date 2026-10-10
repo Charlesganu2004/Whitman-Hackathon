@@ -17,7 +17,7 @@
 - [x] 12 focus apps: Instagram, TikTok, Facebook, X, Snapchat, YouTube, Reddit, Threads, Pinterest, Discord, Twitch, LinkedIn
 - [x] Custom iOS module: Swift Family Controls, Expo config plugin, verification scripts
 - [x] Server: Node + SQLite, Groq + OpenAI providers, server-side keys only
-- [x] Tests: engine, server, resume, AI (41 automated tests passing)
+- [x] Tests: engine, server, resume, AI (42 automated tests passing; October 10 receipt in TESTING.md)
 - [x] CI: GitHub Actions (Ubuntu verify + macOS iOS prebuild)
 - [x] Verification: typecheck, web/iOS JS export, Expo config/plugin checks
 - [x] Docs: README, DESIGN, GROQ-HACKATHON, INTAKE, IPHONE, PLAN, TEAM-HANDOFF, TESTING
@@ -62,11 +62,11 @@
   - [ ] Dynamic Type
   - [ ] Reduce Motion
   - [ ] Dark/light system changes
-- [ ] GitHub Actions first run after push:
-  - [ ] Ubuntu verify job green
-  - [ ] macOS generated-project job green
-- [ ] Dependency recheck:
-  - [ ] `npm audit` — 15 high-severity transitive Expo/Metro entries
+- [x] GitHub Actions baseline verified (run 38027167712; every new push reruns checks):
+  - [x] Ubuntu verify job green
+  - [x] macOS generated-project job green (configuration generation, not Swift compilation)
+- [x] Dependency recheck, October 10, 2026:
+  - [x] `npm audit` — 15 high-severity transitive Expo/Metro entries remain; no compatible patched release
   - [ ] Update compatible patched packages when released
 
 ## To do — post-demo improvements
@@ -76,8 +76,8 @@
 - [ ] Evidence-based company preparation (currently goals are AI context only)
 - [ ] Study-time notifications (local push)
 - [ ] Secure hosted API: HTTPS, deployment-specific account/privacy review
-- [ ] Figma screenshot repairs (missing text in some frames)
-- [ ] Final integration run receipt in `docs/TESTING.md`
+- [x] Figma text/clipping repairs and browser visual check (API structural audit and prototype scrolling remain unverified)
+- [x] Final local integration run receipt in `docs/TESTING.md`
 
 ## To do — before public deployment
 

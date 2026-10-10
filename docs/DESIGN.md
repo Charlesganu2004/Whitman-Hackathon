@@ -2,7 +2,7 @@
 
 Unscroll connects a student's next opportunity with a more intentional phone habit. The name describes replacing unplanned scrolling with interview practice. Its promise is “Practice for what's next.”
 
-The interface uses forest green, sage, and ivory. One green accent drives actions, selected states, progress, and focus. System typography keeps the iPhone rendering crisp without font downloads. Native shapes create the orbit, focus lock, flame badge, progress rings, and navigation icons at device resolution.
+The interface supports Light, Dark, and System appearance with pink, red, blue, or green accents. One selected accent drives actions, progress, focus artwork, and the moving background; neutral surfaces keep reading and coding clear. System typography and native shapes render the orbit, focus lock, flame badge, progress rings, and navigation icons at device resolution without downloaded fonts or raster artwork. The layout stays within a 430-point content width and uses a 12/20/28-point corner scale.
 
 ## Reference study
 
@@ -12,15 +12,16 @@ These are references, not copied screens or downloaded art. No third-party desig
 
 ## REA observation workflow
 
-The reviewed REA commit and limitations remain in `INTAKE.md`. Its browser observation sequence is applied through the available browser tools: inspect rendered structure, trigger a real interaction, inspect resulting state and API behavior, then review screenshots. Source, tokens, request bodies and resume data are not sent to a third-party design service. REA's executable runtime remains uninstalled because its full runtime intake is incomplete.
+The reviewed REA commit and limitations remain in `INTAKE.md`. Its browser observation sequence is applied through the available browser tools: inspect rendered structure, trigger a real interaction, inspect resulting state and API behavior, then review screenshots. Credentials, request bodies, and resume data are not sent to a third-party design service. REA's executable runtime remains uninstalled because its full runtime intake is incomplete.
 
 ## Motion
 
 - The opening screen introduces the name and focus orbit while the real startup work runs.
 - Primary actions compress slightly on press and return with a short spring.
-- Progress meters transition to their measured value.
+- Progress meters and segmented skill rings transition to their measured value; decorative orbit markers show completed daily interviews.
 - Dashboard and roadmap sections enter in short staggered groups.
-- The focus orbit settles and reacts to earned access rather than moving indefinitely during a question.
+- A low-opacity accent background drifts behind the interface. Focus artwork includes orbit motion and changes its lock state when app access is earned.
+- Continuous loops pause when the app is backgrounded or the browser tab is hidden.
 - Loading uses an indeterminate indicator rather than a fabricated completion percentage.
 
 Reduced-motion preferences suppress positional and scaling motion. Motion never delays a required action or substitutes for quiz progress. Controls retain visible labels, focus states, and touch targets.

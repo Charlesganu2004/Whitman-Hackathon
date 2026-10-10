@@ -172,20 +172,64 @@ export function lessonCoachWithRubric(lesson: Lesson, message: string, profile: 
 
 const reservedIdentifiers = new Set(['await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default', 'delete', 'do', 'else', 'enum', 'export', 'extends', 'false', 'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'new', 'null', 'return', 'super', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield', 'let', 'static', 'implements', 'interface', 'package', 'private', 'protected', 'public', 'arguments', 'eval']);
 
+function codeOutsideLiterals(source: string): string {
+  let result = '';
+  let mode: 'code' | 'line' | 'block' | '"' | "'" | '`' = 'code';
+  const lineBreak = /[\r\n\u2028\u2029]/;
+  for (let index = 0; index < source.length; index++) {
+    const character = source[index]!;
+    const next = source[index + 1];
+    if (mode === 'line') {
+      result += lineBreak.test(character) ? character : ' ';
+      if (lineBreak.test(character)) mode = 'code';
+    } else if (mode === 'block') {
+      if (character === '*' && next === '/') {
+        result += '  ';
+        index++;
+        mode = 'code';
+      } else result += lineBreak.test(character) ? character : ' ';
+    } else if (mode !== 'code') {
+      result += lineBreak.test(character) ? character : '?';
+      if (character === '\\' && next !== undefined) {
+        result += lineBreak.test(next) ? next : '?';
+        index++;
+      } else if (character === mode) mode = 'code';
+    } else if (character === '/' && (next === '/' || next === '*')) {
+      mode = next === '/' ? 'line' : 'block';
+      result += '  ';
+      index++;
+    } else if (character === '"' || character === "'" || character === '`') {
+      mode = character;
+      result += '?';
+    } else result += character;
+  }
+  return result;
+}
+
 function namedFunction(answer: string, name: string): { parameter: string; body: string } | null {
-  const source = answer.replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\r\n\u2028\u2029]/g, ' ')).replace(/\/\/[^\n\r\u2028\u2029]*/g, '');
+  const trimmed = answer.trim();
+  const fence = trimmed.match(/^```(?:javascript|js)?[^\S\r\n]*\r?\n([\s\S]*?)```/);
+  if (trimmed.startsWith('```') && !fence) return null;
+  const source = codeOutsideLiterals(fence ? fence[1]! : trimmed);
   const pattern = new RegExp(`\\bfunction\\s+${name}\\s*\\(\\s*([A-Za-z_$][\\w$]*)\\s*\\)\\s*\\{`, 'g');
   const matches = [...source.matchAll(pattern)];
-  if (matches.length !== 1 || new RegExp(`\\b${name}\\s*=`).test(source)) return null;
+  if (matches.length !== 1 || new RegExp(`\\b${name}\\s*(?:=|(?:\\?\\?|&&|\\|\\||[+*/%&|^\\-])=)`).test(source)) return null;
   const match = matches[0]!;
-  if (reservedIdentifiers.has(match[1]!) || /\basync\s*$/.test(source.slice(0, match.index))) return null;
+  if (source.slice(0, match.index).trim() || reservedIdentifiers.has(match[1]!)) return null;
   const start = match.index! + match[0].length;
   let depth = 1;
   for (let index = start; index < source.length; index++) {
     const character = source[index];
-    if (character === '"' || character === "'" || character === '`') return null;
     if (character === '{') depth++;
-    if (character === '}' && --depth === 0) return { parameter: match[1]!, body: source.slice(start, index).trim() };
+    if (character === '}' && --depth === 0) {
+      const suffix = source.slice(index + 1).trim();
+      if (fence && !/^;?\s*$/.test(suffix)) return null;
+      const wordExpression = /^(?:(?:new|typeof|void|await|delete|yield)\s+)*[A-Za-z]+(?:\s+(?:in|instanceof)\s+(?:(?:new|typeof|void|await|delete|yield)\s+)*[A-Za-z]+)*$/;
+      const prose = suffix.replace(/\bO\((?:n|1|log\s+n|n\s+log\s+n|n\s*\^\s*\d+)\)/g, '').replace(/\(([^()]*)\)/g, (group, contents: string) =>
+        /^[A-Za-z]+(?:\s+[A-Za-z]+)+$/.test(contents.trim()) && !wordExpression.test(contents.trim()) ? '' : group);
+      if (!fence && (/[{}=()]/.test(prose) || /\+\+|--/.test(prose) || /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*[,;]/.test(prose) || /(?:^|[;\r\n\u2028\u2029])\s*(?:if|for|while|switch|throw|try|return|void|delete|new|await)\b/.test(prose))) return null;
+      return { parameter: match[1]!, body: source.slice(start, index).trim() };
+    }
   }
   return null;
 }
@@ -242,7 +286,7 @@ export function gradeWithRubric(question: Question, answer: string): Feedback {
   }
   const strengths = results.filter(item => item.met).map(item => item.label);
   const improvements = results.filter(item => !item.met).map(item => item.label);
-  if (coding && !supportedCodeIsCorrect(question, answer)) improvements.push('The local checker accepts a limited JavaScript loop/reduce or Set pattern, verifies its return and boundary behavior, and never executes your code. Correct unsupported forms need AI review; review the example and try a different question.');
+  if (coding && !supportedCodeIsCorrect(question, answer)) improvements.push('Place a standalone JavaScript function first, optionally in a code block. The local checker accepts a limited loop/reduce or Set pattern, verifies its return and boundary behavior, and never executes your code. Correct unsupported forms need AI review; review the example and try a different question.');
   if (!substantial) improvements.unshift(`Give a coherent explanation of at least ${minimumWords} words with a specific example; a list of keywords is insufficient.`);
   const score = substantial ? Math.round(strengths.length / results.length * 100) : Math.min(30, Math.round(strengths.length / results.length * 30));
   return { passed: substantial && improvements.length === 0, score, strengths, improvements, explanation: `${substantial && !improvements.length ? 'Your response meets the local practice rubric.' : 'Review the missing criteria, then apply the idea to a different question.'} Example reasoning: ${spec.example} Local rubric checks wording and structure; it does not execute code or provide a full semantic assessment.`, mode: 'rubric', ...(question.kind === 'behavioral' ? { star: starWithRubric(answer) } : {}) };

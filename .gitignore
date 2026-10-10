@@ -2,6 +2,8 @@ node_modules/
 node_modules.interrupted-*/
 .expo/
 dist/
+dist-web/
+dist-ios/
 web-build/
 .env
 .env.*

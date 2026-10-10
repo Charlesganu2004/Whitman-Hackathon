@@ -124,6 +124,67 @@ test('local code checks reject wrong returns, accumulation and empty/all-negativ
   }
 });
 
+test('local code checks require a standalone declaration outside literals and dead code', () => {
+  for (const id of ['sw-positive-sum', 'sw-unique']) {
+    const spec = QUESTION_SPECS.find(item => item.question.id === id);
+    const boundary = spec.example.indexOf(id === 'sw-unique' ? ' A Set' : ' Zero is');
+    const code = spec.example.slice(0, boundary);
+    const explanation = spec.example.slice(boundary);
+    const name = id === 'sw-unique' ? 'unique' : 'sumPositive';
+    for (const answer of [
+      `const unusedText = \`${code}\`;${explanation}`,
+      `const unusedText = ${JSON.stringify(code)};${explanation}`,
+      `const unusedText = '${code}';${explanation}`,
+      `const unusedText = \`escaped \\\` ${code}\`;${explanation}`,
+      `/* ${code} */${explanation}`,
+      `// ${code}\n${explanation}`,
+      `if (false) { ${code} }${explanation}`,
+      `function wrapper() { ${code} }${explanation}`,
+      `const unused = ${code};${explanation}`,
+      `void ${code};${explanation}`,
+      `throw new Error(); ${code}${explanation}`,
+      `${code} throw new Error();${explanation}`,
+      `${code} ${name} = () => 999;${explanation}`,
+      `${code} ${name} ||= () => 999;${explanation}`,
+      `${code} const Set = class { constructor() { return [999]; } };${explanation}`,
+      `${code} Set.prototype.add = () => undefined;${explanation}`,
+      `${code} Set.prototype.add = null;${explanation}`,
+      `${code} delete Set.prototype.add;${explanation}`,
+      `${code} Reflect.deleteProperty(Set.prototype, 'add');${explanation}`,
+      `${code} Reflect['deleteProperty'] (Set.prototype, 'add');${explanation}`,
+      `${code} Set.prototype.add++;${explanation}`,
+      `${code} mutate();${explanation}`,
+      `${code} mutate(new Set);${explanation}`,
+      `${code} mutate(typeof Set);${explanation}`,
+      `${code} mutate(value in Set);${explanation}`,
+      `\`\`\`javascript\nif (false) { ${code} }\n\`\`\`${explanation}`,
+      `\`\`\`javascript\n${code}\nthrow new Error();\n\`\`\`${explanation}`,
+    ]) {
+      const feedback = gradeWithRubric(spec.question, answer);
+      assert.equal(feedback.passed, false, `${id}: ${answer}`);
+      assert.ok(feedback.improvements.includes(spec.criteria[1].label), id);
+    }
+    for (const answer of [
+      `/* function ${name}(unused) { return 999; } */\n${spec.example}`,
+      `// A standalone function follows.\n${spec.example}`,
+      `\`\`\`javascript\n${code}\n\`\`\`${explanation}`,
+      `\`\`\`js\n${code};\n\`\`\`${explanation}`,
+      `${code} A quoted counterexample is \`${code}\`.${explanation}`,
+      `${code} This function returns its result without changing the input.${explanation}`,
+    ]) assert.equal(gradeWithRubric(spec.question, answer).passed, true, `${id}: ${answer}`);
+  }
+  const unique = QUESTION_SPECS.find(spec => spec.question.id === 'sw-unique');
+  for (const prefix of ['const Set = class { constructor() { return [999]; } }; ', 'let Array = {}; ']) {
+    assert.equal(gradeWithRubric(unique.question, prefix + unique.example).passed, false);
+  }
+  assert.equal(gradeWithRubric(unique.question, unique.example.replace('A Set stores values', 'A Set (which stores distinct values) stores values')).passed, true);
+  assert.equal(gradeWithRubric(unique.question, unique.example.replace('in insertion order', 'in insertion order (in original order)')).passed, true);
+  const sum = QUESTION_SPECS.find(spec => spec.question.id === 'sw-positive-sum');
+  for (const accumulator of ['Set', 'Array']) {
+    assert.equal(gradeWithRubric(sum.question, sum.example.replaceAll('total', accumulator)).passed, true);
+  }
+});
+
 test('checkpoint questions assess the current level and do not grant daily credit', () => {
   const state = ready('intermediate');
   state.snapshot.profile.targetCompanies = ['Example Company'];

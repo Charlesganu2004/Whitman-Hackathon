@@ -4,6 +4,8 @@
 
 Charles led the product scope and built the initial Unscroll MVP: Expo/React Native/TypeScript application, SQLite-backed accounts, resume onboarding, placement, adaptive practice, review before a fresh retry, lessons and knowledge checks, company goals, daily and weekly plans, streaks, and a full progress roadmap. The UI includes an animated phone layout, light/dark/system appearance, four accent choices, five navigation tabs, and Profile with a device-local photo. The server supports low-cost Groq and optional OpenAI for voice transcription, STAR feedback, technical hints, and lesson coaching. Native iPhone focus integration and repeatable verification are included.
 
+The October 10 continuation adds a moving accent background, sharper native focus artwork, reactive progress rings, and foreground/Reduce Motion handling. It also fixes retained question headings, the initial lesson countdown, and local-code false passes from quoted functions, dead wrappers, and suffix mutations. The local suite passes 42 tests. Existing Figma frames were repaired for wrapped text and badge overlap. See [TESTING.md](TESTING.md) for the precise receipt and limits.
+
 ## Teammates: first run on Mac and iPhone
 
 1. Pull the latest repository. Install Node.js 24 or newer, then run `npm ci --ignore-scripts` and `npm run check:environment`.

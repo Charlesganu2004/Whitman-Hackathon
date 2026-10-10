@@ -68,9 +68,12 @@ Do not count an Expo Go run, JavaScript export, project fixture or prebuild resu
 
 ## Recorded results
 
-- Local automated integration checks: Pending final integration run and receipt.
-- GitHub Ubuntu verification job: Pending first workflow run after push.
-- GitHub macOS generated-project job: Pending first workflow run after push.
+- Local automated integration checks, October 10, 2026: `npm run typecheck` exited 0; `npm test` reported `tests 42`, `pass 42`, `fail 0`, `skipped 0`. Coverage includes authentication/persistence, resume boundaries, failed-answer replacement, daily reward rules, promotion evidence, provider failures, and local-code grading regressions for quoted/dead code and suffix mutations.
+- Final web and iOS JavaScript exports exited 0. Expo config checks passed for development and production; the local pod/Swift module autolink check passed; the Xcode plugin fixture remained parseable and idempotent across two passes. These checks do not compile Swift or exercise an iPhone.
+- Browser check at 390 × 844: signup, four-step survey, pasted resume, four-answer expert placement, failed daily answer, feedback acknowledgement and a different replacement question, three-answer daily completion with a 30-minute earned break, roadmap evidence, company goals, two-session target, and dark/pink appearance. A reload resumed the saved placement. Old question headings no longer remain after transitions. Width checks at 320 and 430 pixels matched `document.documentElement.scrollWidth` with no horizontal overflow.
+- GitHub baseline verification: [run 38027167712](https://github.com/Charlesganu2004/Whitman-Hackathon/actions/runs/38027167712), commit `74692e2086aacb279d15013d08d4b997e5db11ca`, passed both Ubuntu verification and macOS generated-project checks. Each new push reruns this workflow; inspect its own result before claiming that revision passed CI.
+- Figma copy repairs: existing screen headings, wrapped copy, and streak badges were repaired and visually checked in the browser. The post-write API structural audit was unavailable because of the Figma Starter MCP limit; prototype scrolling is not verified. See [the four-screen proof](https://www.figma.com/design/XRrxuZzGV3ej805HeUkqqB/?node-id=9-183).
 - Mac/iPhone Expo Go end-to-end cases: Pending physical-device run.
+- Browser lesson acceptance: the initial study countdown shows 15 seconds; selecting an answer keeps completion disabled until ready. The correct knowledge answer then saved the lesson, displayed "Completed," and updated the dashboard to 1 of 8 lessons.
 - Live AI generation, grading and voice transcription: Pending configured-provider run.
 - Native Swift compilation, signing and physical-device shielding: Pending Mac and entitled iPhone development-build run.
