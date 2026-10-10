@@ -4,6 +4,22 @@
 
 This is a working hackathon MVP built with Expo, React Native, TypeScript, and SQLite. **Expo Go runs the practice experience but cannot block other iPhone applications.** Actual shielding uses the included custom iOS module and requires a signed development build with Apple's Family Controls capability. See [iPhone setup](docs/IPHONE.md).
 
+## What's left to do
+
+See the full **[coding TODO list](docs/TODO.md)** for everything remaining. Quick summary:
+
+| Category | What needs doing | Blocker |
+|----------|------------------|---------|
+| Live AI testing | Groq key, transcription, STAR feedback, coaching | API key |
+| Expo Go on iPhone | Full acceptance run on real device | Mac + iPhone |
+| Native shielding | Swift compile, Family Controls, actual app blocking | Mac + iPhone |
+| Accessibility | VoiceOver, Dynamic Type, Reduce Motion | Physical device |
+| CI / dependencies | First GitHub Actions run, npm audit recheck | Push / npm |
+| Post-demo | Code judge, question banks, notifications, hosted API | After demo |
+| Pre-deployment | HTTPS, privacy/terms, audit resolution | Before public |
+
+The detailed checklist with sub-items is in [**docs/TODO.md**](docs/TODO.md).
+
 ## Student experience
 
 1. Watch the animated Unscroll entrance, then choose **Create account** or **Log in**.
