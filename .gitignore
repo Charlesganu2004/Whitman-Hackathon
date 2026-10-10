@@ -17,3 +17,6 @@ server/data/
 /android/
 test-results/
 .DS_Store
+marketing/ad/out/
+.claude/
+graphify-out/

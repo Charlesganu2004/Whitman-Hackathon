@@ -6,7 +6,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createAI } from './ai.mjs';
 import { decodeBase64, extractResume } from './resume.mjs';
-import { acknowledgeReview, applyAnswer, completeLesson, createState, DomainError, getSnapshot, LEVELS, requireSession, startSession, studyDate } from '../src/core/engine.ts';
+import { acknowledgeReview, applyAnswer, completeLesson, createState, DomainError, getSnapshot, LEVELS, releaseTurn, requireSession, reserveTurn, startSession, studyDate } from '../src/core/engine.ts';
 import { LESSONS, trackForMajor } from '../src/core/content.ts';
 
 const scrypt = promisify(scryptCallback);
@@ -17,6 +17,15 @@ const hashToken = token => createHash('sha256').update(token).digest('hex');
 function textField(value, label, minimum, maximum) {
   if (typeof value !== 'string' || value.trim().length < minimum || value.length > maximum || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value)) throw new DomainError(`${label} must contain ${minimum}–${maximum} characters.`);
   return value.trim();
+}
+// The client sends the recent thread; it is untrusted text for the model, so only its shape and size are checked.
+function turnHistory(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 8) throw new DomainError('History can hold at most 8 turns.');
+  return value.map(item => {
+    if (!item || typeof item !== 'object' || (item.role !== 'interviewer' && item.role !== 'student')) throw new DomainError('Each history turn needs a role of interviewer or student.');
+    return { role: item.role, text: textField(item.text, 'History text', 1, 2000) };
+  });
 }
 function emailField(value) {
   const email = textField(value, 'Email', 3, 254).toLowerCase();
@@ -69,9 +78,21 @@ export function createServer(options = {}) {
     CREATE INDEX IF NOT EXISTS token_user ON tokens(user_id);
   `);
   const now = options.now ?? (() => Date.now());
-  const ai = createAI({ apiKey: options.apiKey, groqApiKey: options.groqApiKey, provider: options.aiProvider ?? options.provider, speechProvider: options.speechProvider, fetchImpl: options.fetchImpl, model: options.model, groqModel: options.groqModel, transcriptionModel: options.transcriptionModel, groqTranscriptionModel: options.groqTranscriptionModel, timeoutMs: options.aiTimeoutMs });
+  const ai = createAI({ apiKey: options.apiKey, groqApiKey: options.groqApiKey, nvidiaApiKey: options.nvidiaApiKey, nvidiaModel: options.nvidiaModel, provider: options.aiProvider ?? options.provider, speechProvider: options.speechProvider, fetchImpl: options.fetchImpl, model: options.model, groqModel: options.groqModel, transcriptionModel: options.transcriptionModel, groqTranscriptionModel: options.groqTranscriptionModel, timeoutMs: options.aiTimeoutMs });
   const grade = options.grade ?? ai.grade;
   const buckets = new Map();
+  const voiceCache = new Map();
+  const voiceBytes = new Map();
+  function trimVoiceCache() {
+    let total = 0;
+    for (const size of voiceBytes.values()) total += size;
+    // Map order is oldest first, so the oldest finished entries go until at most 32 entries and about 48 MB remain.
+    for (const key of [...voiceCache.keys()]) {
+      if (voiceCache.size <= 32 && total <= 48_000_000) break;
+      if (!voiceBytes.has(key)) continue;
+      total -= voiceBytes.get(key); voiceBytes.delete(key); voiceCache.delete(key);
+    }
+  }
   const allowedOrigins = (options.allowedOrigins ?? process.env.APP_ALLOWED_ORIGINS ?? '').split(',').map(value => value.trim()).filter(Boolean);
   let closed = false;
 
@@ -178,7 +199,7 @@ export function createServer(options = {}) {
     const client = request.socket.remoteAddress ?? 'unknown';
     limit(`all:${client}`, 200, 60_000);
     const send = (data, status = 200) => { response.statusCode = status; response.end(JSON.stringify(data)); };
-    if (path === '/health' && method === 'GET') return send({ ok: true, gradingMode: ai.enabled ? 'ai' : 'rubric', gradingProvider: ai.provider, speechAvailable: ai.speechAvailable, speechProvider: ai.speechProvider, database: 'sqlite', schemaVersion: 1 });
+    if (path === '/health' && method === 'GET') return send({ ok: true, gradingMode: ai.enabled ? 'ai' : 'rubric', gradingProvider: ai.provider, speechAvailable: ai.speechAvailable, speechProvider: ai.speechProvider, voiceAvailable: ai.voiceAvailable, database: 'sqlite', schemaVersion: 1 });
     if (path === '/auth/signup' && method === 'POST') {
       limit(`auth:${client}`, 15, 15 * 60_000);
       const body = await readBody(request);
@@ -287,6 +308,42 @@ export function createServer(options = {}) {
       if (current.status === 'completed' || current.questions[current.index]?.id !== questionId) throw new DomainError('Your question changed while coaching was loading. Continue from the current step.', 409);
       return send(reply);
     }
+    const turnRoute = path.match(/^\/sessions\/([^/]+)\/turn$/);
+    if (turnRoute && method === 'POST') {
+      const body = await readBody(request);
+      const questionId = textField(body.questionId, 'Question ID', 1, 150);
+      const message = textField(body.message, 'Message', 1, 2000);
+      if (body.stage !== 'clarify' && body.stage !== 'debrief') throw new DomainError('Stage must be clarify or debrief.');
+      const stage = body.stage;
+      const intent = body.intent ?? 'clarify';
+      if (intent !== 'clarify' && intent !== 'hint') throw new DomainError('Intent must be clarify or hint.');
+      if (stage === 'debrief' && intent === 'hint') throw new DomainError('Hints are available before you submit your answer.');
+      const history = turnHistory(body.history);
+      limit(`turn:${userId}`, 30, 60_000);
+      // Dialogue never writes an attempt, a grade, an unlock or a promotion. It only counts the turn (and the hint, which costs evaluation points).
+      const context = mutate(userId, state => {
+        const session = requireSession(state, turnRoute[1]);
+        const attempt = session.attempts.find(item => item.questionId === questionId);
+        if (stage === 'clarify') {
+          const current = session.questions[session.index];
+          if (session.status !== 'active' || !current || current.id !== questionId || attempt) throw new DomainError('Ask Jarvis about the current question before you submit it.', 409);
+        } else if (!attempt) throw new DomainError('Submit your answer before you talk through the feedback.', 409);
+        const question = session.questions.find(item => item.id === questionId);
+        if (!question) throw new DomainError('That question is no longer open. Continue from the current step.', 409);
+        const hintsUsed = reserveTurn(state, session, questionId, stage, intent);
+        return { question, profile: state.snapshot.profile, feedback: attempt?.feedback, answer: attempt?.answer, hintsUsed };
+      });
+      let reply;
+      try { reply = await ai.converse(context.question, { stage, intent, message, history, feedback: context.feedback, answer: context.answer, hintNumber: context.hintsUsed }, context.profile); }
+      catch (error) {
+        mutate(userId, state => { const active = state.snapshot.activeSession; releaseTurn(state, active?.id === turnRoute[1] ? active : null, questionId, stage, intent); });
+        throw new DomainError(error.message || 'Jarvis is unavailable. Try again in a moment.', error.status === 429 ? 429 : 503);
+      }
+      const current = requireSession(loadState(userId).state, turnRoute[1]);
+      const answered = current.attempts.some(item => item.questionId === questionId);
+      if (stage === 'clarify' ? current.status !== 'active' || current.questions[current.index]?.id !== questionId || answered : !answered) throw new DomainError('Your question changed while Jarvis was replying. Continue from the current step.', 409);
+      return send(stage === 'clarify' ? { ...reply, hintsUsed: current.hints?.[questionId] ?? 0 } : reply);
+    }
     const lessonRoute = path.match(/^\/lessons\/([^/]+)\/(start|complete|coach)$/);
     if (lessonRoute && method === 'POST') {
       const body = await readBody(request);
@@ -317,11 +374,29 @@ export function createServer(options = {}) {
       }));
       return send(mutate(userId, state => completeLesson(state, lesson.id, body.answer, now())));
     }
+    if (path === '/ai/speak' && method === 'POST') {
+      const body = await readBody(request);
+      const text = textField(body.text, 'Text', 1, 600);
+      limit(`voice:${userId}`, 20, 60_000);
+      if (!ai.voiceAvailable) throw new DomainError('Jarvis voice needs GROQ_API_KEY on the host. The device voice will be used instead.', 503);
+      // The same words are never synthesized twice: finished and in-flight results are shared, and the cache stays small.
+      const key = createHash('sha256').update(`${ai.ttsModel}\n${ai.ttsVoice}\n${text}`).digest('hex');
+      let result = voiceCache.get(key);
+      if (result) { voiceCache.delete(key); voiceCache.set(key, result); }
+      else {
+        result = ai.speak(text);
+        voiceCache.set(key, result);
+        result.then(value => { voiceBytes.set(key, value.audio.length); trimVoiceCache(); }, () => { if (voiceCache.get(key) === result) voiceCache.delete(key); });
+      }
+      try { return send(await result); }
+      catch (error) { throw new DomainError(error.message || 'Jarvis voice is unavailable. The device voice will be used instead.', error.status === 429 ? 429 : 503); }
+    }
     if (path === '/ai/transcribe' && method === 'POST') {
       limit(`speech:${userId}`, 10, 60_000);
       const body = await readBody(request);
       const session = loadState(userId).state.snapshot.activeSession;
-      if (!session || session.status !== 'active' || session.questions[session.index]?.kind !== 'behavioral') throw new DomainError('Record speech for the current behavioral interview question.', 409);
+      const spoken = session?.questions[session.index];
+      if (!session || session.status !== 'active' || !spoken || spoken.starter) throw new DomainError('Record speech for a behavioral or talk-through interview question. Coding answers are typed.', 409);
       const buffer = decodeBase64(body.base64);
       if (typeof body.mimeType !== 'string') throw new DomainError('Provide the audio recording format.');
       try { return send({ text: await ai.transcribe(buffer, body.mimeType) }); }

@@ -1,16 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as DocumentPicker from 'expo-document-picker';
 import { File } from 'expo-file-system';
 import { LESSONS } from './src/core/content';
 import type { Feedback, Lesson, Profile, Snapshot } from './src/core/types';
-import { configureApi, getApiUrl, initializeApi, request } from './src/services/api';
-import { clearAccount, readAvatar, writeAvatar, readSnapshot, readToken, writeSnapshot, writeToken } from './src/services/cache';
+import { ApiError, configureApi, getApiUrl, initializeApi, NetworkError, request, subscribeConnection } from './src/services/api';
+import { clearAccount, clearDraft, readAvatar, writeAvatar, readSnapshot, readToken, writeSnapshot, writeToken } from './src/services/cache';
+import { configureServerVoice } from './src/services/voice';
+import { breakNotice, startDecision } from './src/core/break';
+import { OFFLINE_REASON, offlineGuidance, ONLINE_NOTICE_MS, ONLINE_TITLE, retryDelayMs } from './src/core/connection';
+import { summarizeSession } from './src/core/recap';
 import { authorizeFocus, chooseFocusApps, emergencyRelease, focusStatus, lockFocus, unlockFocus } from './src/services/focus';
 import { Body, Button, Card, Chips, Field, Label, Message, Meter, Title } from './src/ui/components';
-import { VoiceAnswer } from './src/ui/VoiceAnswer';
 import { ThemeProvider, useTheme } from './src/ui/theme';
 import { Dashboard } from './src/ui/Dashboard';
 import { Progress } from './src/ui/Progress';
@@ -19,9 +22,12 @@ import { Navigation } from './src/ui/Navigation';
 import { BrandIntro, Welcome } from './src/ui/BrandIntro';
 import { FocusApps } from './src/ui/FocusApps';
 import { TechnicalCoach } from './src/ui/TechnicalCoach';
-import { AnswerFeedback } from './src/ui/AnswerFeedback';
+import { InterviewChat } from './src/ui/InterviewChat';
+import { SkillStandings } from './src/ui/SkillStandings';
 import { PracticeHub } from './src/ui/PracticeHub';
-import { Reveal, AmbientMotion, AmbientBackground } from './src/ui/motion';
+import { OfflineBanner } from './src/ui/OfflineBanner';
+import { SessionRecap } from './src/ui/SessionRecap';
+import { Reveal, AmbientBackground } from './src/ui/motion';
 import { Avatar } from './src/ui/Avatar';
 
 type Tab = 'today' | 'practice' | 'learn' | 'progress' | 'settings';
@@ -43,6 +49,11 @@ function Application() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [offline, setOffline] = useState(false);
+  const offlineRef = useRef(false);
+  const [retrying, setRetrying] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const [backOnline, setBackOnline] = useState(false);
+  const profileLoaded = useRef(false);
   const [tab, setTab] = useState<Tab>('today');
   const [signup, setSignup] = useState(true);
   const [name, setName] = useState('');
@@ -60,7 +71,6 @@ function Application() {
   const [unlockMinutes, setUnlockMinutes] = useState(30);
   const [focusApps, setFocusApps] = useState(['Instagram', 'TikTok']);
   const [resumeText, setResumeText] = useState('');
-  const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [practice, setPractice] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -71,6 +81,8 @@ function Application() {
   const [focus, setFocus] = useState({ supported: false, authorized: false, selectedCount: 0, blocking: false, emergencyReleased: false, reason: 'Checking focus support…' });
   const [now, setNow] = useState(Date.now());
   const scroll = useRef<ScrollView>(null);
+  const draftsCleared = useRef(new Set<string>());
+  const scrollY = useRef(new Animated.Value(0)).current;
   const profile = snapshot?.profile;
   const session = snapshot?.activeSession;
   const question = session?.questions[session.index];
@@ -83,6 +95,9 @@ function Application() {
   async function accept(data: Snapshot) {
     setSnapshot(data);
     await writeSnapshot(data);
+    const done = data.activeSession?.status === 'completed' ? data.activeSession : null;
+    // A completed session has no composer left to restore, so its saved drafts go.
+    if (done && !draftsCleared.current.has(done.id)) { draftsCleared.current.add(done.id); void Promise.all(done.questions.map(item => clearDraft(done.id, item.id))).catch(() => undefined); }
     try {
       const current = await focusStatus();
       if (current.supported && current.authorized && current.selectedCount > 0) {
@@ -97,11 +112,12 @@ function Application() {
   }
   async function refreshFocus() { setFocus(await focusStatus()); }
   function populate(p: Profile) {
+    profileLoaded.current = true;
     setMajor(p.major || 'Computer Science'); setCompanies((p.targetCompanies || []).join(', ')); setTarget(p.target); setMinutes(p.minutes);
     setDays(p.daysPerWeek); setSessionsPerDay(p.sessionsPerDay || 1); setUnlockMinutes(p.unlockMinutes); setFocusApps(p.focusApps);
   }
   async function health() {
-    try { const data = await request<Record<string, unknown>>('/health'); setSpeechAvailable(Boolean(data.speechAvailable || data.speech || data.aiEnabled)); setGradingMode(String(data.gradingMode || data.mode || 'rubric')); } catch { /* Connection errors are surfaced by the requested action. */ }
+    try { const data = await request<Record<string, unknown>>('/health'); setSpeechAvailable(Boolean(data.speechAvailable || data.speech || data.aiEnabled)); setGradingMode(String(data.gradingMode || data.mode || 'rubric')); configureServerVoice(Boolean(data.voiceAvailable)); } catch { /* Connection errors are surfaced by the requested action. */ }
   }
   useEffect(() => {
     void (async () => {
@@ -111,7 +127,12 @@ function Application() {
           const cached = await readSnapshot();
           if (cached) { setSnapshot(cached); populate(cached.profile); }
           try { const data = await request<Snapshot>('/me'); await accept(data); populate(data.profile); }
-          catch (e) { if (cached) { setOffline(true); setError('Offline view. Reconnect before starting or submitting practice.'); } else { await clearAccount(); setError(e instanceof Error ? e.message : 'Sign in again.'); } }
+          catch (e) {
+            // A lost connection keeps the token and the cached snapshot: the offline banner explains it and the account returns with the server.
+            if (e instanceof NetworkError) { /* shown as the offline banner */ }
+            else if (cached && e instanceof ApiError && e.status !== 401) setError(e.message);
+            else { await clearAccount(); setSnapshot(null); setError(e instanceof Error ? e.message : 'Sign in again.'); }
+          }
         }
         await refreshFocus(); await health();
       } catch (e) { setError(e instanceof Error ? e.message : 'Could not initialize app.'); }
@@ -120,22 +141,56 @@ function Application() {
   }, []);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), selectedLesson ? 1000 : 15000); return () => clearInterval(timer); }, [selectedLesson?.id]);
   useEffect(() => {
-    const listener = AppState.addEventListener('change', state => { if (state === 'active') { setNow(Date.now()); void (async () => { try { if (await readToken()) { await accept(await request<Snapshot>('/me')); setOffline(false); } else await refreshFocus(); } catch { setOffline(true); } })(); } });
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') { setNow(Date.now()); void (async () => { try { if (await readToken()) await accept(await request<Snapshot>('/me')); else await refreshFocus(); } catch { /* A lost connection is reported by the request itself and shown as the offline banner. */ } })(); } });
     return () => listener.remove();
   }, []);
-  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab, step, practice, selectedLesson?.id, question?.id, feedback]);
+  useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab, step, practice, selectedLesson?.id, question?.id]);
+  const markOffline = () => { if (offlineRef.current) return; offlineRef.current = true; setOffline(true); setAttempt(0); setBackOnline(false); };
+  const markOnline = () => { if (!offlineRef.current) return; offlineRef.current = false; setOffline(false); setBackOnline(true); };
+  // Every request reports whether the server answered, so any screen's failure or success moves the whole app between states.
+  useEffect(() => subscribeConnection(reachable => { if (reachable) markOnline(); else markOffline(); }), []);
+  useEffect(() => {
+    if (!backOnline) return;
+    const timer = setTimeout(() => setBackOnline(false), ONLINE_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [backOnline]);
+  // The quiet check: 3 s, 6 s, 12 s, then every 20 s, until the server answers.
+  useEffect(() => {
+    if (!offline) return;
+    const timer = setTimeout(() => { void probe().finally(() => setAttempt(count => count + 1)); }, retryDelayMs(attempt));
+    return () => clearTimeout(timer);
+  }, [offline, attempt]);
+  async function probe() {
+    try {
+      if (await readToken()) { const data = await request<Snapshot>('/me'); await accept(data); if (!profileLoaded.current) populate(data.profile); }
+      else await request('/health');
+    } catch (e) {
+      if (!(e instanceof ApiError)) return;
+      // The server answered, so it is back. Its answer decides what happens next.
+      if (e.status === 401) { await clearAccount(); profileLoaded.current = false; setSnapshot(null); setPractice(false); setSelectedLesson(null); setFeedback(null); }
+      setError(e.message);
+    }
+  }
+  async function retryNow() { setRetrying(true); try { await probe(); } finally { setRetrying(false); } }
+  async function saveServer() {
+    setRetrying(true);
+    try { await configureApi(serverUrl); await probe(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not use that server address.'); }
+    finally { setRetrying(false); }
+  }
+  function scrollToEnd() { setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 60); }
 
   async function act(work: () => Promise<void>) {
     if (busy) return;
     setBusy(true); setError(''); setNotice('');
-    try { await work(); } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.'); }
+    try { await work(); } catch (e) { if (!(e instanceof NetworkError)) setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.'); }
     finally { setBusy(false); }
   }
   async function authenticate() {
     await configureApi(serverUrl || getApiUrl());
     const data = await request<{ token: string; snapshot: Snapshot }>(signup ? '/auth/signup' : '/auth/login', { name, email, password, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
     await writeToken(data.token); await accept(data.snapshot); populate(data.snapshot.profile);
-    setPassword(''); setOffline(false); setStep(0); setReviewPlan(true); await health();
+    setPassword(''); setStep(0); setReviewPlan(false); await health();
   }
   const saveProfile = async () => accept(await request<Snapshot>('/profile', { major, target, targetCompanies: companies.split(',').map(value => value.trim()).filter(Boolean), minutes, daysPerWeek: days, sessionsPerDay, unlockMinutes, focusApps, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }, 'PUT'));
   async function uploadResume() {
@@ -165,8 +220,19 @@ function Application() {
     await writeAvatar(profile!.id, image); setAvatar(image); setNotice('Profile photo saved on this device.');
   }
   async function startSession(kind: 'placement' | 'daily' | 'checkpoint') {
-    const data = await request<Snapshot>('/sessions', { kind });
-    await accept(data); setPractice(true); setAnswer(''); setFeedback(null);
+    let data: Snapshot;
+    try { data = await request<Snapshot>('/sessions', { kind }); }
+    catch (e) {
+      if (kind === 'daily' && e instanceof ApiError && e.status === 409) {
+        // The earned break is still running. Bring the snapshot up to date so the screen shows it, and say so in the break's own words.
+        const fresh = await request<Snapshot>('/me');
+        await accept(fresh);
+        const decision = startDecision(fresh, Date.now());
+        if (decision.action === 'break') { setNotice(breakNotice(decision.minutesLeft)); return; }
+      }
+      throw e;
+    }
+    await accept(data); setPractice(true); setFeedback(null);
     if (kind === 'daily' && focus.supported && focus.authorized && focus.selectedCount > 0) { await lockFocus(); await refreshFocus(); }
   }
   async function openLesson(lesson: Lesson) {
@@ -174,25 +240,25 @@ function Application() {
     const startedAt = Date.now();
     setSelectedLesson(lesson); setLessonChoice(-1); setLessonStartedAt(startedAt); setNow(startedAt);
   }
-  async function submitAnswer() {
+  async function submitAnswer(answer: string) {
     if (!session || !question) return;
     const data = await request<{ feedback: Feedback; snapshot: Snapshot }>(`/sessions/${session.id}/answer`, { questionId: question.id, answer });
-    await accept(data.snapshot); setFeedback(data.feedback); setAnswer('');
+    setFeedback(data.feedback); await accept(data.snapshot);
     if (data.snapshot.stats.unlockedUntil && data.snapshot.activeSession?.status === 'completed' && data.snapshot.activeSession.kind === 'daily' && focus.supported && focus.authorized && focus.selectedCount > 0) {
       try { await unlockFocus(data.snapshot.stats.unlockedUntil); await refreshFocus(); }
       catch (e) { setError(`Quiz passed, but iPhone unlock failed: ${e instanceof Error ? e.message : 'unknown error'}. Use Release focus in Settings.`); }
     }
   }
   async function nextQuestion() {
-    if (session?.status === 'review' && question) await accept(await request<Snapshot>(`/sessions/${session.id}/review`, { questionId: question.id }));
-    setFeedback(null); setAnswer('');
+    if (session?.status === 'review' && question) { const data = await request<Snapshot>(`/sessions/${session.id}/review`, { questionId: question.id }); setFeedback(null); await accept(data); return; }
+    setFeedback(null);
   }
   async function logout() {
     if (focus.supported) { try { await emergencyRelease(); } catch (e) { setError('Logged out, but focus release failed. Use Screen Time settings to release selected apps.'); } }
     let revoked = true;
     try { await request('/auth/logout', {}, undefined, 5000); } catch { revoked = false; }
     await clearAccount(); setSnapshot(null); setPractice(false); setSelectedLesson(null);
-    setFeedback(null); setOffline(false); setReviewPlan(false); setAuthOpen(false); setTab('today');
+    profileLoaded.current = false; setFeedback(null); setReviewPlan(false); setAuthOpen(false); setTab('today');
     if (!revoked) setNotice('Logged out on this device. The server session could not be revoked while disconnected.');
   }
   
@@ -214,7 +280,8 @@ function Application() {
         {signup && <Field label="Your name" value={name} onChangeText={setName} autoComplete="name" />}
         <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" />
         <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete={signup ? 'new-password' : 'current-password'} placeholder="At least 8 characters" />
-        <Button title={signup ? 'Create account' : 'Log in'} busy={busy} disabled={!email.trim() || password.length < 8 || (signup && !name.trim())} onPress={() => { void act(authenticate); }} />
+        <Button title={signup ? 'Create account' : 'Log in'} busy={busy} disabled={offline || !email.trim() || password.length < 8 || (signup && !name.trim())} onPress={() => { void act(authenticate); }} />{offline && <Body muted>{OFFLINE_REASON}</Body>}
+        {(signup && !name.trim()) || !email.trim() || password.length < 8 ? <Body muted>{signup && !name.trim() ? 'Add your name to continue.' : !email.trim() ? 'Add your email to continue.' : 'Use a password with at least 8 characters.'}</Body> : null}
         <Button title={signup ? 'Already have an account? Log in' : 'New here? Create account'} secondary onPress={() => { setSignup(!signup); setError(''); }} />
       </Card>
       <Button title={showServer ? 'Hide server connection' : 'Server connection'} secondary onPress={() => setShowServer(!showServer)} />
@@ -223,10 +290,16 @@ function Application() {
   }
 
     if (practice) {
-      if (feedback) return <View key="answer-feedback" style={s.stack}><AnswerFeedback feedback={feedback} /><Button title={session?.status === 'completed' ? 'See your results' : session?.status === 'review' ? 'I understand · try a different question' : 'Next question'} busy={busy} onPress={() => { void act(nextQuestion); }} />{session?.status === 'review' && <Body muted>Review what was missing. A different question checks that you learned it.</Body>}</View>;
-      if (session?.status === 'completed') return <View style={s.stack}><Card green><Label>{session.kind === 'placement' ? 'Placement complete' : session.kind === 'checkpoint' ? 'Knowledge checkpoint complete' : 'Practice complete'}</Label><Title>{session.kind === 'placement' ? `Your starting level:\n${capitalize(profile!.level)}` : session.kind === 'checkpoint' ? `Your checkpoint score:\n${Math.round(session.attempts.reduce((sum, attempt) => sum + attempt.feedback.score, 0) / Math.max(1, session.attempts.length))}%` : 'Prepared looks\ngood on you.'}</Title><Body>{session.kind === 'placement' ? 'Your answers set your starting point. Lessons and practice help you move toward master.' : session.kind === 'checkpoint' ? 'Your current level stays the same. Use the feedback and roadmap to choose your next lesson. Checkpoints do not unlock apps.' : `You earned ${profile!.unlockMinutes} minutes of app access.`}</Body>{session.kind === 'daily' && <Body muted>{focus.supported && focus.authorized ? 'Selected iPhone apps have an unlock request. Check focus status below.' : 'Practice mode: Expo Go cannot block or unlock other apps.'}</Body>}</Card><Button title="Back to your dashboard" onPress={() => { setPractice(false); setTab('today'); }} /></View>;
-      if (!session || !question) return <Card><Body>No active interview.</Body><Button title="Back to dashboard" onPress={() => setPractice(false)} /></Card>;
-      return <View key={question.id} style={s.stack}><View style={s.row}><Label>{session.kind === 'placement' ? 'Find your starting point' : session.kind === 'checkpoint' ? 'Test your knowledge' : 'Today’s interview'}</Label><Text style={s.pill}>{session.index + 1}/{session.questions.length}</Text></View><Meter value={100 * session.index / session.questions.length} /><Label>{question.kind === 'behavioral' ? 'Speak with your interviewer' : 'Technical practice'} · {question.topic}</Label><Reveal key={question.id}><Title small>{question.title}</Title></Reveal><Card><Body>{question.prompt}</Body>{question.starter && <Text selectable style={s.code}>{question.starter}</Text>}</Card>{question.kind === 'technical' && <TechnicalCoach key={question.id} sessionId={session.id} questionId={question.id} offline={offline} onError={setError} />}{question.kind === 'behavioral' && <VoiceAnswer key={question.id} prompt={question.prompt} enabled={speechAvailable} onTranscript={setAnswer} onError={setError} />}<Field label={question.kind === 'behavioral' ? 'Your answer or voice transcript' : 'Your solution and reasoning'} multiline value={answer} onChangeText={setAnswer} autoCorrect={question.kind === 'behavioral'} autoCapitalize="sentences" placeholder={question.kind === 'behavioral' ? 'Describe the situation, your action, and the result…' : 'Write your approach, code if relevant, and explain the tradeoffs…'} style={question.kind === 'technical' ? s.codeInput : undefined} /><Body muted>{question.kind === 'technical' ? 'Answers receive technical rubric or AI review. Code is not executed.' : 'You can edit your transcript before submitting.'}</Body><Button title="Submit answer" busy={busy} disabled={offline || answer.trim().length < 10} onPress={() => { void act(submitAnswer); }} /><Button title="Save and leave interview" secondary onPress={() => setPractice(false)} /></View>;
+      // While feedback is on screen the session has already moved on, so the answered question is the last attempt's.
+      const answered = feedback && session ? session.questions.find(item => item.id === session.attempts[session.attempts.length - 1]?.questionId) : undefined;
+      const discussed = answered ?? question;
+      if (session && discussed && (feedback || session.status !== 'completed')) return <InterviewChat key="interview" session={session} question={discussed} feedback={feedback} stats={snapshot.stats} name={snapshot.profile.name} offline={offline} speechAvailable={speechAvailable} nextLabel={session.status === 'completed' ? 'See your results' : session.status === 'review' ? 'I understand · try a different question' : 'Next question'} nextBusy={busy} reviewing={session.status === 'review'} onSubmit={submitAnswer} onNext={() => { void act(nextQuestion); }} onLeave={() => setPractice(false)} onNewMessage={scrollToEnd} />;
+      if (session?.status === 'completed') {
+        const evaluation = Math.round(session.attempts.reduce((sum, attempt) => sum + (attempt.feedback.evaluationScore ?? attempt.feedback.score), 0) / Math.max(1, session.attempts.length));
+        const hintsTaken = session.attempts.reduce((sum, attempt) => sum + (attempt.feedback.hintsUsed ?? 0), 0);
+        return <View style={s.stack}><Card green><Label>{session.kind === 'placement' ? 'Placement complete' : session.kind === 'checkpoint' ? 'Knowledge checkpoint complete' : 'Practice complete'}</Label><Title>{session.kind === 'placement' ? `Your starting level:\n${capitalize(profile!.level)}` : session.kind === 'checkpoint' ? `Your evaluation score:\n${evaluation}%` : 'Prepared looks\ngood on you.'}</Title><Body>{session.kind === 'placement' ? 'Your answers set your starting point. Lessons and practice help you move toward master.' : session.kind === 'checkpoint' ? 'Your current level stays the same. Use the feedback and roadmap to choose your next lesson. Checkpoints do not unlock apps.' : `You earned ${profile!.unlockMinutes} minutes of app access.`}</Body>{session.kind === 'checkpoint' && hintsTaken > 0 && <Body muted>{hintsTaken === 1 ? 'You took 1 hint, which lowered this score by up to 10 points.' : `You took ${hintsTaken} hints, which lowered this score by up to ${hintsTaken * 10} points.`} Your grades and pass results are unchanged.</Body>}{session.kind === 'daily' && <Body muted>{focus.supported && focus.authorized ? 'Selected iPhone apps have an unlock request. Check focus status below.' : 'Practice mode: Expo Go cannot block or unlock other apps.'}</Body>}</Card><SkillStandings stats={snapshot.stats} title={session.kind === 'checkpoint' ? 'Your evaluation' : 'Where you stand'} /><SessionRecap recap={summarizeSession(session, { profile: profile!, stats: snapshot.stats, now })} offline={offline} busy={busy} onLesson={lessonId => { const lesson = LESSONS.find(item => item.id === lessonId); if (lesson) void act(async () => { await openLesson(lesson); setPractice(false); }); }} onDaily={() => { setPractice(false); setTab('today'); }} onEvaluate={() => { setPractice(false); setTab('practice'); }} /><Button title="Back to your dashboard" onPress={() => { setPractice(false); setTab('today'); }} /></View>;
+      }
+      return <Card><Body>No active interview.</Body><Button title="Back to dashboard" onPress={() => setPractice(false)} /></Card>;
     }
     if (needsOnboarding) return <View style={s.stack}>
     <Label>{profile!.placementComplete ? 'Review your plan' : 'Make your plan'} · {step + 1} of 4</Label>{session && ['active', 'review'].includes(session.status) && <Card green><Body>Your saved interview is ready. Finish it before changing your plan.</Body><Button title="Resume saved interview" onPress={() => { setReviewPlan(false); setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); }} /></Card>}<Meter value={(step + 1) / 4 * 100} />
@@ -235,30 +308,32 @@ function Application() {
       : step === 2 ? <><Title>{'Make room\nto focus.'}</Title><FocusApps selected={focusApps} onChange={setFocusApps} />{focus.supported && <Card><Body>{focus.reason}</Body><Button title={focus.authorized ? 'Screen Time connected' : 'Connect Screen Time'} secondary busy={busy} disabled={focus.authorized} onPress={() => { void act(async () => { await authorizeFocus(); await refreshFocus(); }); }} /><Button title="Choose apps on this iPhone" secondary busy={busy} disabled={!focus.authorized} onPress={() => { void act(async () => { await chooseFocusApps(); await refreshFocus(); }); }} /><Body muted>{focus.selectedCount} apps selected on this device.</Body></Card>}</>
       : <><Title>{'Your experience\nis your story.'}</Title><Body muted>Add a PDF or text resume to personalize your interview. You can also paste resume text.</Body><Button title="Upload resume · PDF or TXT" secondary busy={busy} onPress={() => { void act(uploadResume); }} />{profile!.resumeName && <Card green><Body>✓ {profile!.resumeName}</Body></Card>}<Field label="Or paste resume text" multiline value={resumeText} onChangeText={setResumeText} placeholder="Education, projects, work experience and skills…" /><Body muted>{profile!.placementComplete ? 'Your placement and completed lessons will be kept.' : 'Next: two behavioral and two technical questions to find your starting level.'}</Body></>}
     <Button title={step === 3 ? profile!.placementComplete ? 'Save plan and resume progress' : 'Save plan and start placement' : 'Continue'} busy={busy} disabled={!major.trim() || offline || (step === 3 && !profile!.resumeName && resumeText.trim().length < 40) || (step === 3 && resumeText.trim().length > 0 && resumeText.trim().length < 40)} onPress={() => { void act(async () => { if (step < 3) setStep(step + 1); else { if (session && ['active', 'review'].includes(session.status)) { setReviewPlan(false); setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); return; } if (resumeText.trim()) await accept(await request<Snapshot>('/resume', { name: 'Pasted resume', text: resumeText })); await saveProfile(); setReviewPlan(false); setResumeText(''); if (!profile!.placementComplete) await startSession('placement'); else setTab('progress'); } }); }} />
+    {offline && <Body muted>{OFFLINE_REASON}</Body>}
     {step > 0 && <Button title="Back" secondary onPress={() => setStep(step - 1)} />}
   </View>;
 
-    if (selectedLesson) return <View style={s.stack}><Button title="Back to lessons" secondary onPress={() => { setSelectedLesson(null); setFeedback(null); }} /><Label>{selectedLesson.topic} · {selectedLesson.minutes} min</Label><Title>{selectedLesson.title}</Title><Body muted>{selectedLesson.summary}</Body>{selectedLesson.sections.map(section => <Card key={section.title}><Title small>{section.title}</Title><Body>{section.body}</Body></Card>)}<TechnicalCoach key={selectedLesson.id} lessonId={selectedLesson.id} offline={offline} onError={setError} /><Card><Label>Check your understanding</Label><Body>{selectedLesson.check.prompt}</Body>{selectedLesson.check.choices.map((choice, i) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: lessonChoice === i }} aria-checked={lessonChoice === i} key={choice} onPress={() => setLessonChoice(i)} style={[s.choice, lessonChoice === i && { borderColor: colors.accent, backgroundColor: colors.pale }]}><Body>{choice}</Body></Pressable>)}<Body muted>{profile!.completedLessonIds.includes(selectedLesson.id) ? 'Completed. You can review the lesson anytime.' : now - lessonStartedAt < 15000 ? 'Read the lesson before checking your answer. Ready in ' + Math.max(1, Math.ceil((15000 - (now - lessonStartedAt)) / 1000)) + ' seconds.' : 'Choose the answer that best applies the lesson.'}</Body><Button title="Check answer and finish lesson" busy={busy} disabled={lessonChoice < 0 || offline || (!profile!.completedLessonIds.includes(selectedLesson.id) && now - lessonStartedAt < 15000)} onPress={() => { void act(async () => { const data = await request<{ feedback: Feedback; snapshot: Snapshot }>(`/lessons/${selectedLesson.id}/complete`, { answer: lessonChoice }); await accept(data.snapshot); setNotice(data.feedback.passed ? 'Lesson complete. Your learning progress is saved.' : data.feedback.explanation); if (!data.feedback.passed) setError(data.feedback.explanation); }); }} /></Card></View>;
+    if (selectedLesson) return <View style={s.stack}><Button title="Back to lessons" secondary onPress={() => { setSelectedLesson(null); setFeedback(null); }} /><Label>{selectedLesson.topic} · {selectedLesson.minutes} min</Label><Title>{selectedLesson.title}</Title><Body muted>{selectedLesson.summary}</Body>{selectedLesson.sections.map(section => <Card key={section.title}><Title small>{section.title}</Title><Body>{section.body}</Body></Card>)}<TechnicalCoach key={selectedLesson.id} lessonId={selectedLesson.id} offline={offline} onError={setError} /><Card><Label>Check your understanding</Label><Body>{selectedLesson.check.prompt}</Body>{selectedLesson.check.choices.map((choice, i) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: lessonChoice === i }} aria-checked={lessonChoice === i} key={choice} onPress={() => setLessonChoice(i)} style={[s.choice, lessonChoice === i && { borderColor: colors.accent, backgroundColor: colors.pale }]}><Body>{choice}</Body></Pressable>)}<Body muted>{profile!.completedLessonIds.includes(selectedLesson.id) ? 'Completed. You can review the lesson anytime.' : now - lessonStartedAt < 15000 ? 'Read the lesson before checking your answer. Ready in ' + Math.max(1, Math.ceil((15000 - (now - lessonStartedAt)) / 1000)) + ' seconds.' : 'Choose the answer that best applies the lesson.'}</Body><Button title="Check answer and finish lesson" busy={busy} disabled={lessonChoice < 0 || offline || (!profile!.completedLessonIds.includes(selectedLesson.id) && now - lessonStartedAt < 15000)} onPress={() => { void act(async () => { const data = await request<{ feedback: Feedback; snapshot: Snapshot }>(`/lessons/${selectedLesson.id}/complete`, { answer: lessonChoice }); await accept(data.snapshot); setNotice(data.feedback.passed ? 'Lesson complete. Your learning progress is saved.' : data.feedback.explanation); if (!data.feedback.passed) setError(data.feedback.explanation); }); }} />{offline && <Body muted>{OFFLINE_REASON}</Body>}</Card></View>;
 
-    if (tab === 'today') return <Dashboard snapshot={snapshot} focus={focus} remaining={remaining} busy={busy} offline={offline} recommended={LESSONS.find(lesson => levelOrder.indexOf(lesson.level) <= levelOrder.indexOf(profile!.level) && !profile!.completedLessonIds.includes(lesson.id))} onManage={() => setTab('settings')} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
+    if (tab === 'today') return <Dashboard snapshot={snapshot} focus={focus} remaining={remaining} now={now} busy={busy} offline={offline} ai={gradingMode === 'ai'} onCheckpoint={() => { void act(() => startSession('checkpoint')); }} recommended={LESSONS.find(lesson => levelOrder.indexOf(lesson.level) <= levelOrder.indexOf(profile!.level) && !profile!.completedLessonIds.includes(lesson.id))} onManage={() => setTab('settings')} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
 
-    if (tab === 'practice') return <PracticeHub onCheckpoint={() => { void act(() => startSession('checkpoint')); }} snapshot={snapshot} busy={busy} offline={offline} ai={gradingMode === 'ai'} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
-    if (tab === 'learn') return <Lessons profile={profile!} lessons={LESSONS} busy={busy} onOpen={lesson => { void act(() => openLesson(lesson)); }} />;
+    if (tab === 'practice') return <PracticeHub onCheckpoint={() => { void act(() => startSession('checkpoint')); }} snapshot={snapshot} now={now} busy={busy} offline={offline} ai={gradingMode === 'ai'} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
+    if (tab === 'learn') return <Lessons profile={profile!} lessons={LESSONS} busy={busy} offline={offline} onOpen={lesson => { void act(() => openLesson(lesson)); }} />;
 
     if (tab === 'progress') return <Progress snapshot={snapshot} />;
 
-    return <View style={s.stack}><Label>Your profile</Label><View style={s.row}><Avatar name={profile!.name} image={avatar} large /><View style={{flex: 1, gap: 8}}><Title small>{profile!.name}</Title><Body muted>{capitalize(profile!.level)} · {profile!.major}</Body><Body muted>{profile!.target === 'internship' ? 'Internship goal' : 'Full-time goal'}</Body></View></View><Button title="Choose profile photo" secondary busy={busy} onPress={() => { void act(uploadAvatar); }} /><Card green><Label>Your next opportunity</Label><Body>{profile!.targetCompanies?.length ? profile!.targetCompanies.join(' · ') : 'Add target companies in your study preferences.'}</Body><Button title="View your roadmap" secondary onPress={() => setTab('progress')} /></Card><Title small>Settings</Title><Card><Title small>Appearance</Title><Chips options={[{ label: 'Light', value: 'light' }, { label: 'Dark', value: 'dark' }, { label: 'System', value: 'system' }]} value={mode} onChange={setMode} /><Body muted>System follows your phone’s appearance. Your choice is saved on this device.</Body><Label>Accent color</Label><Chips options={[{ label: 'Pink', value: 'pink' }, { label: 'Red', value: 'red' }, { label: 'Blue', value: 'blue' }, { label: 'Green', value: 'green' }]} value={accent} onChange={setAccent} />{persistenceError && <Message text={persistenceError} />}</Card><Card><Title small>Focus apps</Title><Body>{focus.reason}</Body>{!focus.supported ? <Body muted>To test actual app blocking, use the native iPhone development build described in docs/IPHONE.md.</Body> : <><Button title={focus.authorized ? 'Screen Time connected' : 'Connect Screen Time'} secondary disabled={focus.authorized} busy={busy} onPress={() => { void act(async () => { await authorizeFocus(); await accept(await request<Snapshot>('/me')); }); }} /><Button title="Choose apps on this iPhone" secondary disabled={!focus.authorized} busy={busy} onPress={() => { void act(async () => { await chooseFocusApps(); await refreshFocus(); }); }} /><Body muted>{focus.selectedCount} apps selected. Start a daily interview to pause them.</Body><Button title="Release focus · emergency exit" secondary busy={busy} onPress={() => { void act(async () => { await emergencyRelease(); await refreshFocus(); setNotice('Focus released until you explicitly resume blocking or start a new interview. Your progress is saved.'); }); }} /></>}{focus.emergencyReleased && <Button title="Resume app blocking" secondary busy={busy} disabled={!focus.authorized || focus.selectedCount === 0} onPress={() => { void act(async () => { await lockFocus(); await refreshFocus(); setNotice('Focus resumed. Emergency exit remains available.'); }); }} />}<FocusApps selected={focusApps} onChange={setFocusApps} /></Card><Card><Title small>Study preferences</Title>{preferences}<Field label="Your major" value={major} onChangeText={setMajor} /><Field label="Target companies" value={companies} onChangeText={setCompanies} placeholder="Up to five names, separated by commas" /><Chips options={[{ label: 'Internship', value: 'internship' }, { label: 'Full-time', value: 'full-time' }]} value={target} onChange={setTarget} /><Button title="Save preferences" busy={busy} disabled={offline} onPress={() => { void act(async () => { await saveProfile(); setNotice('Study plan updated. New settings apply to your next interview.'); }); }} /></Card><Card><Title small>Your resume</Title><Body muted>{profile!.resumeName || 'No resume saved yet.'}</Body><Button title="Replace resume" secondary busy={busy} disabled={offline} onPress={() => { void act(uploadResume); }} /></Card><Card><Title small>Connection & account</Title><Body muted>{profile!.email}</Body><Field label="Server URL" value={serverUrl} onChangeText={setServerUrl} autoCapitalize="none" /><Button title="Save connection and refresh" secondary busy={busy} onPress={() => { void act(async () => { await configureApi(serverUrl); await accept(await request<Snapshot>('/me')); setOffline(false); await health(); setNotice('Connected.'); }); }} /><Body muted>{gradingMode === 'ai' ? 'AI coaching enabled. Voice recordings and answer text are sent to your configured provider.' : 'Rubric coaching enabled. Add GROQ_API_KEY or OPENAI_API_KEY on the server to enable AI and voice transcription.'}</Body><Button title="Log out" secondary busy={busy} onPress={() => { void act(logout); }} /></Card></View>;
+    return <View style={s.stack}><Label>Your profile</Label><View style={s.row}><Avatar name={profile!.name} image={avatar} large /><View style={{flex: 1, gap: 8}}><Title small>{profile!.name}</Title><Body muted>{capitalize(profile!.level)} · {profile!.major}</Body><Body muted>{profile!.target === 'internship' ? 'Internship goal' : 'Full-time goal'}</Body></View></View><Button title="Choose profile photo" secondary busy={busy} onPress={() => { void act(uploadAvatar); }} /><Card green><Label>Your next opportunity</Label><Body>{profile!.targetCompanies?.length ? profile!.targetCompanies.join(' · ') : 'Add target companies in your study preferences.'}</Body><Button title="View your roadmap" secondary onPress={() => setTab('progress')} /></Card><Title small>Settings</Title><Card><Title small>Appearance</Title><Chips options={[{ label: 'Light', value: 'light' }, { label: 'Dark', value: 'dark' }, { label: 'System', value: 'system' }]} value={mode} onChange={setMode} /><Body muted>System follows your phone’s appearance. Your choice is saved on this device.</Body><Label>Accent color</Label><Chips options={[{ label: 'Pink', value: 'pink' }, { label: 'Red', value: 'red' }, { label: 'Blue', value: 'blue' }, { label: 'Green', value: 'green' }]} value={accent} onChange={setAccent} />{persistenceError && <Message text={persistenceError} />}</Card><Card><Title small>Focus apps</Title><Body>{focus.reason}</Body>{!focus.supported ? <Body muted>To test actual app blocking, use the native iPhone development build described in docs/IPHONE.md.</Body> : <><Button title={focus.authorized ? 'Screen Time connected' : 'Connect Screen Time'} secondary disabled={focus.authorized} busy={busy} onPress={() => { void act(async () => { await authorizeFocus(); await accept(await request<Snapshot>('/me')); }); }} /><Button title="Choose apps on this iPhone" secondary disabled={!focus.authorized} busy={busy} onPress={() => { void act(async () => { await chooseFocusApps(); await refreshFocus(); }); }} /><Body muted>{focus.selectedCount} apps selected. Start a daily interview to pause them.</Body><Button title="Release focus · emergency exit" secondary busy={busy} onPress={() => { void act(async () => { await emergencyRelease(); await refreshFocus(); setNotice('Focus released until you explicitly resume blocking or start a new interview. Your progress is saved.'); }); }} /></>}{focus.emergencyReleased && <Button title="Resume app blocking" secondary busy={busy} disabled={!focus.authorized || focus.selectedCount === 0} onPress={() => { void act(async () => { await lockFocus(); await refreshFocus(); setNotice('Focus resumed. Emergency exit remains available.'); }); }} />}<FocusApps selected={focusApps} onChange={setFocusApps} /></Card><Card><Title small>Study preferences</Title>{preferences}<Field label="Your major" value={major} onChangeText={setMajor} /><Field label="Target companies" value={companies} onChangeText={setCompanies} placeholder="Up to five names, separated by commas" /><Chips options={[{ label: 'Internship', value: 'internship' }, { label: 'Full-time', value: 'full-time' }]} value={target} onChange={setTarget} /><Button title="Save preferences" busy={busy} disabled={offline} onPress={() => { void act(async () => { await saveProfile(); setNotice('Study plan updated. New settings apply to your next interview.'); }); }} />{offline && <Body muted>{OFFLINE_REASON}</Body>}</Card><Card><Title small>Your resume</Title><Body muted>{profile!.resumeName || 'No resume saved yet.'}</Body><Button title="Replace resume" secondary busy={busy} disabled={offline} onPress={() => { void act(uploadResume); }} />{offline && <Body muted>{OFFLINE_REASON}</Body>}</Card><Card><Title small>Connection & account</Title><Body muted>{profile!.email}</Body><Field label="Server URL" value={serverUrl} onChangeText={setServerUrl} autoCapitalize="none" /><Button title="Save connection and refresh" secondary busy={busy} onPress={() => { void act(async () => { await configureApi(serverUrl); await accept(await request<Snapshot>('/me')); await health(); setNotice('Connected.'); }); }} /><Body muted>{gradingMode === 'ai' ? 'AI coaching enabled. Voice recordings and answer text are sent to your configured provider.' : 'Rubric coaching enabled. Add a free NVIDIA_API_KEY on the server for AI coaching, or GROQ_API_KEY or OPENAI_API_KEY for AI coaching with voice transcription.'}</Body><Button title="Log out" secondary busy={busy} onPress={() => { void act(logout); }} /></Card></View>;
   }
 
   if (!ready || !introDone) return <BrandIntro />;
   const showTabs = !!snapshot && !needsOnboarding && !practice && !selectedLesson;
-  return <SafeAreaView style={s.app}><AmbientBackground /><StatusBar style={isDark ? 'light' : 'dark'} /><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-    <View style={s.header}><Text style={s.brand}>unscroll<Text style={{ color: colors.accent }}>.</Text></Text><View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}><AmbientMotion />{snapshot && !needsOnboarding && <Avatar name={snapshot.profile.name} image={avatar} onPress={() => { setPractice(false); setSelectedLesson(null); setTab('settings'); }} />}</View></View>
-    <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}><View style={s.content}>
+  return <SafeAreaView style={s.app}><AmbientBackground scrollY={scrollY} /><StatusBar style={isDark ? 'light' : 'dark'} /><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <View style={s.header}><Text style={s.brand}>unscroll<Text style={{ color: colors.accent }}>.</Text></Text><View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>{snapshot && !needsOnboarding && <Avatar name={snapshot.profile.name} image={avatar} onPress={() => { setPractice(false); setSelectedLesson(null); setTab('settings'); }} />}</View></View>
+    <Animated.ScrollView ref={scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} scrollEventThrottle={16} onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: Platform.OS !== 'web' })} contentContainerStyle={s.scroll}><View style={s.content}>
+      {offline && <OfflineBanner guidance={offlineGuidance(Platform.OS === 'web' ? 'web' : 'phone', getApiUrl(), !!snapshot)} retrying={retrying} serverUrl={serverUrl} onServerUrlChange={setServerUrl} onRetry={() => { setAttempt(0); void retryNow(); }} onSaveServer={() => { void saveServer(); }} />}
+      {backOnline && !offline && <Message tone="notice" text={ONLINE_TITLE} />}
       {error !== '' && <Message text={error} />}{notice !== '' && <Card green><Body>{notice}</Body></Card>}
-      {offline && <Button title="Reconnect" secondary busy={busy} onPress={() => { void act(async () => { await accept(await request<Snapshot>('/me')); setOffline(false); await health(); }); }} />}
       {renderContent()}
-    </View></ScrollView>
+    </View></Animated.ScrollView>
     {showTabs && <Navigation tab={tab} onChange={item => { setTab(item); setError(''); setNotice(''); }} />}
   </KeyboardAvoidingView></SafeAreaView>;
 }

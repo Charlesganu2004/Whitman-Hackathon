@@ -1,20 +1,20 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from './components';
-import { Reveal } from './motion';
+import { AmbientBackground, Reveal } from './motion';
 import { FocusOrbit } from './visuals';
 import { useTheme, type ThemePalette } from './theme';
 
 export function BrandIntro() {
   const { colors } = useTheme();
   const s = useMemo(() => createStyles(colors), [colors]);
-  return <View style={s.intro}><Reveal><Text style={s.introEyebrow}>MAKE ROOM FOR YOUR FUTURE</Text></Reveal><FocusOrbit /><Reveal delay={100}><Text style={s.introBrand}>Unscroll<Text style={s.brandDot}>.</Text></Text><Text style={s.introTagline}>Practice for what’s next.</Text></Reveal><Reveal delay={200}><View style={s.loadingDots}>{[0, 1, 2].map(dot => <View key={dot} style={[s.loadingDot, { opacity: 1 - dot * 0.25 }]} />)}</View><Text accessibilityLiveRegion="polite" aria-live="polite" style={s.loadingLabel}>Getting your plan ready</Text></Reveal></View>;
+  return <View style={s.intro}><AmbientBackground hero /><Reveal><Text style={s.introEyebrow}>MAKE ROOM FOR YOUR FUTURE</Text></Reveal><FocusOrbit /><Reveal delay={100}><Text style={s.introBrand}>Unscroll<Text style={s.brandDot}>.</Text></Text><Text style={s.introTagline}>Practice for what’s next.</Text></Reveal><Reveal delay={200}><View style={s.loadingDots}>{[0, 1, 2].map(dot => <View key={dot} style={[s.loadingDot, { opacity: 1 - dot * 0.25 }]} />)}</View><Text accessibilityLiveRegion="polite" aria-live="polite" style={s.loadingLabel}>Getting your plan ready</Text></Reveal></View>;
 }
 export function Welcome({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
   const { colors } = useTheme();
   const s = useMemo(() => createStyles(colors), [colors]);
   return <View style={s.welcome}>
-    <Reveal><View style={s.welcomeArtwork}><Text style={s.welcomeEyebrow}>A BETTER KIND OF SCREEN TIME</Text><FocusOrbit /><View style={s.artworkCaption}><View style={s.captionDot} /><Text style={s.captionText}>Your next opportunity is worth the focus.</Text></View></View></Reveal>
+    <Reveal><View style={s.welcomeArtwork}><AmbientBackground hero /><Text style={s.welcomeEyebrow}>A BETTER KIND OF SCREEN TIME</Text><FocusOrbit /><View style={s.artworkCaption}><View style={s.captionDot} /><Text style={s.captionText}>Your next opportunity is worth the focus.</Text></View></View></Reveal>
     <Reveal delay={100}><Text style={s.welcomeTitle}>{'Less scrolling.\nMore possibility.'}</Text><Text style={s.welcomeBody}>Turn a few minutes of distraction into interview confidence. Practice, learn, and earn your break.</Text></Reveal>
     <Reveal delay={180}><View style={s.actions}><Button title="Create account" onPress={onSignup} /><Button title="Log in" secondary onPress={onLogin} /><Text style={s.footnote}>Technical skills. Better stories. One daily habit.</Text></View></Reveal>
   </View>;

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unscroll on iPhone</title>
+<style>
+  :root { --stage: #111014; --hero: #211820; --ink: #FAEFF5; --muted: #B9A7B3; --line: #3D303A; --accent: #F28DBB; --bezel: #2B272C; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--stage); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 72px; }
+  .field { position: fixed; inset: 0; overflow: hidden; pointer-events: none; }
+  .ring { position: absolute; border: 1px solid var(--line); border-radius: 50%; opacity: .7; animation: drift 34s ease-in-out infinite alternate; }
+  .ring:nth-child(1) { width: 760px; height: 760px; left: -220px; top: -260px; }
+  .ring:nth-child(2) { width: 520px; height: 520px; right: -120px; bottom: -200px; animation-duration: 26s; animation-direction: alternate-reverse; }
+  .ring:nth-child(3) { width: 300px; height: 300px; right: 22%; top: 12%; border-color: var(--accent); opacity: .18; animation-duration: 19s; }
+  @keyframes drift { from { transform: translate3d(0, 0, 0) rotate(0deg); } to { transform: translate3d(46px, 34px, 0) rotate(14deg); } }
+  .copy { position: relative; max-width: 330px; }
+  .brand { font-size: 28px; font-weight: 700; letter-spacing: -.8px; margin: 0 0 28px; }
+  .brand span { color: var(--accent); }
+  .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1 { font-size: 34px; line-height: 1.12; letter-spacing: -1.1px; margin: 0 0 16px; }
+  p { color: var(--muted); margin: 0 0 22px; }
+  ol { margin: 0; padding: 0; list-style: none; counter-reset: step; display: grid; gap: 12px; }
+  li { counter-increment: step; display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; color: var(--ink); }
+  li::before { content: counter(step); width: 28px; height: 28px; border-radius: 12px; background: var(--hero); border: 1px solid var(--line); color: var(--accent); font-weight: 700; font-size: 13px; display: grid; place-items: center; }
+  code { font: 13px ui-monospace, Consolas, monospace; background: var(--hero); border: 1px solid var(--line); border-radius: 8px; padding: 1px 7px; color: var(--ink); }
+  .fit { position: relative; width: 417px; height: 876px; flex: none; transform-origin: center; }
+  .phone { position: absolute; inset: 0; border-radius: 58px; background: var(--bezel); padding: 12px; box-shadow: 0 0 0 1px #4A444B inset, 0 0 0 2px #0B0A0D, 0 40px 90px rgba(0, 0, 0, .55), 0 0 120px rgba(242, 141, 187, .10); }
+  .phone::before, .phone::after { content: ""; position: absolute; width: 4px; border-radius: 2px; background: #3A353B; }
+  .phone::before { left: -4px; top: 178px; height: 62px; box-shadow: 0 86px 0 #3A353B; }
+  .phone::after { right: -4px; top: 250px; height: 96px; }
+  .screen { position: relative; width: 393px; height: 852px; border-radius: 46px; overflow: hidden; background: var(--stage); }
+  .status { height: 54px; padding: 0 30px 0 38px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 16px; letter-spacing: -.2px; }
+  .island { position: absolute; left: 50%; top: 11px; width: 124px; height: 36px; margin-left: -62px; border-radius: 20px; background: #000; }
+  .signal { display: flex; align-items: flex-end; gap: 6px; }
+  .bars { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+  .bars i { width: 3px; border-radius: 1px; background: var(--ink); }
+  .bars i:nth-child(1) { height: 4px; } .bars i:nth-child(2) { height: 6px; } .bars i:nth-child(3) { height: 9px; } .bars i:nth-child(4) { height: 12px; }
+  .battery { width: 25px; height: 12px; border: 1px solid var(--muted); border-radius: 4px; padding: 1px; position: relative; }
+  .battery::before { content: ""; display: block; width: 78%; height: 100%; border-radius: 2px; background: var(--ink); }
+  .battery::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; border-radius: 1px; background: var(--muted); }
+  iframe { display: block; width: 393px; height: 798px; border: 0; background: var(--stage); }
+  .home { position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: var(--ink); opacity: .55; pointer-events: none; }
+  /* The app follows the system appearance by default, so the simulated status bar does too. */
+  @media (prefers-color-scheme: light) { .screen { --stage: #FFF7FA; --ink: #241A22; --muted: #76636F; } }
+  @media (max-width: 860px) { .copy { display: none; } body { gap: 0; } }
+  @media (prefers-reduced-motion: reduce) { .ring { animation: none; } }
+</style>
+</head>
+<body>
+  <div class="field" aria-hidden="true"><div class="ring"></div><div class="ring"></div><div class="ring"></div></div>
+  <section class="copy">
+    <p class="brand">unscroll<span>.</span></p>
+    <p class="eyebrow">Live preview</p>
+    <h1>The app, at iPhone size.</h1>
+    <p>This frame runs the same bundle Expo serves to a phone. It is a browser simulation, so Screen Time shielding and the microphone behave as they do on web.</p>
+    <p class="eyebrow">On a real iPhone</p>
+    <ol>
+      <li><span>Run <code>npm run demo</code> on the computer.</span></li>
+      <li><span>Keep the phone on the same Wi-Fi and scan the QR code with the Camera app.</span></li>
+      <li><span>Expo Go opens Unscroll and finds the server on its own.</span></li>
+    </ol>
+  </section>
+  <div class="fit" id="fit">
+    <div class="phone">
+      <div class="screen">
+        <div class="status"><span id="clock">9:41</span><span class="signal"><span class="bars"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="island"></div>
+        <iframe src="/" title="Unscroll app"></iframe>
+        <div class="home"></div>
+      </div>
+    </div>
+  </div>
+<script>
+  const fit = document.getElementById('fit');
+  function resize() {
+    const scale = Math.min(1, (innerHeight - 40) / 876, (innerWidth - 24) / 417);
+    fit.style.transform = 'scale(' + scale + ')';
+    fit.style.margin = (876 * (scale - 1) / 2) + 'px ' + (417 * (scale - 1) / 2) + 'px';
+  }
+  addEventListener('resize', resize);
+  resize();
+  const clock = document.getElementById('clock');
+  function tick() { const now = new Date(); clock.textContent = (now.getHours() % 12 || 12) + ':' + String(now.getMinutes()).padStart(2, '0'); }
+  tick();
+  setInterval(tick, 20000);
+</script>
+</body>
+</html>

@@ -48,8 +48,8 @@ export function FocusOrbit({ unlocked = false, compact = false, progress = 0 }: 
     <Animated.View style={[visualStyles.orbitCore, { width: size * 0.44, height: size * 0.44, borderRadius: size * 0.22, transform: [{ scale: movement.interpolate({ inputRange: [0, 1], outputRange: [1, 1.035] }) }] }]}>
       <View style={visualStyles.coreHighlight} /><View style={[visualStyles.lockGlyph, compact && { transform: [{ scale: 0.64 }] }]}><Animated.View style={[visualStyles.lockShackle, { transform: [{ translateX: opening.interpolate({ inputRange: [0, 1], outputRange: [0, 7] }) }, { translateY: opening.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }, { rotate: opening.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '24deg'] }) }] }]} /><View style={visualStyles.lockBody}><View style={visualStyles.lockHighlight} /><View style={visualStyles.keyhole} /><View style={visualStyles.keyStem} /></View></View>
     </Animated.View>
-    <Animated.View style={[visualStyles.socialNode, compact && visualStyles.smallNode, { top: size * 0.1, right: size * 0.02, transform: [{ translateY: movement.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { rotate: '8deg' }] }]}><View style={[visualStyles.instagramIcon, compact && { transform: [{ scale: 0.75 }], margin: -3 }]}><View style={visualStyles.instagramLens} /><View style={visualStyles.instagramDot} /></View><Text style={[visualStyles.socialLabel, compact && { fontSize: 7 }]}>Instagram</Text></Animated.View>
-    <Animated.View style={[visualStyles.socialNode, compact && visualStyles.smallNode, { bottom: size * 0.09, left: -3, transform: [{ translateY: movement.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }, { rotate: '-8deg' }] }]}><View style={[visualStyles.musicIcon, compact && { transform: [{ scale: 0.75 }], margin: -3 }]}><View style={visualStyles.musicStem} /><View style={visualStyles.musicNote} /><View style={visualStyles.musicBar} /></View><Text style={[visualStyles.socialLabel, compact && { fontSize: 7 }]}>TikTok</Text></Animated.View>
+    <Animated.View style={[visualStyles.socialNode, compact && visualStyles.smallNode, { top: size * 0.1, right: size * 0.02, transform: [{ translateY: movement.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { rotate: '8deg' }] }]}><View style={[visualStyles.instagramIcon, compact && { transform: [{ scale: 0.75 }], margin: -3 }]}><View style={visualStyles.instagramLens} /><View style={visualStyles.instagramDot} /></View>{!compact && <Text style={visualStyles.socialLabel}>Instagram</Text>}</Animated.View>
+    <Animated.View style={[visualStyles.socialNode, compact && visualStyles.smallNode, { bottom: size * 0.09, left: -3, transform: [{ translateY: movement.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }, { rotate: '-8deg' }] }]}><View style={[visualStyles.musicIcon, compact && { transform: [{ scale: 0.75 }], margin: -3 }]}><View style={visualStyles.musicStem} /><View style={visualStyles.musicNote} /><View style={visualStyles.musicBar} /></View>{!compact && <Text style={visualStyles.socialLabel}>TikTok</Text>}</Animated.View>
   </View>;
 }
 
@@ -103,7 +103,7 @@ function makeVisualStyles(colors: ThemePalette) { return StyleSheet.create({
   keyStem: { width: 3, height: 7, backgroundColor: colors.accentBright, marginTop: -1 },
   socialNode: { position: 'absolute', backgroundColor: colors.onHero, borderWidth: 1, borderColor: colors.accentBright, borderRadius: 16, paddingHorizontal: 11, paddingVertical: 9, alignItems: 'center', gap: 5, shadowColor: colors.accent, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 9, elevation: 3 },
   smallNode: { paddingHorizontal: 7, paddingVertical: 7, borderRadius: 12, gap: 3 },
-  socialLabel: { fontSize: 9, fontWeight: '700', color: colors.forest },
+  socialLabel: { fontSize: 11, fontWeight: '700', color: colors.forest },
   instagramIcon: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: colors.forest, alignItems: 'center', justifyContent: 'center' },
   instagramLens: { width: 11, height: 11, borderRadius: 6, borderWidth: 2, borderColor: colors.forest },
   instagramDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.forest, position: 'absolute', right: 3, top: 3 },
@@ -119,7 +119,7 @@ function makeVisualStyles(colors: ThemePalette) { return StyleSheet.create({
   flameInner: { position: 'absolute', width: 10, height: 14, bottom: 4, borderTopLeftRadius: 1, borderTopRightRadius: 8, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, transform: [{ rotate: '45deg' }], backgroundColor: colors.pale },
   streakCount: { color: colors.ink, fontSize: 22, fontWeight: '700', lineHeight: 27, fontVariant: ['tabular-nums'] },
   streakUnit: { fontSize: 13, fontWeight: '600' },
-  streakLabel: { color: colors.muted, fontSize: 8, fontWeight: '700', letterSpacing: 1, lineHeight: 13 },
+  streakLabel: { color: colors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, lineHeight: 15 },
   ringNumber: { color: colors.ink, fontWeight: '700', fontVariant: ['tabular-nums'] },
   ringPercent: { fontSize: 12, fontWeight: '600' },
   ringLabel: { color: colors.muted, fontWeight: '600', textAlign: 'center', lineHeight: 13, marginTop: 2 },

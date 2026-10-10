@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme, type ViewStyle } from 'react-native';
 import { readThemeAccent, readThemeMode, writeThemeAccent, writeThemeMode } from '../services/cache';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -10,7 +10,7 @@ export interface ThemePalette {
   dangerLine: string; subtle: string; ringTrack: string; hero: string; onHero: string; heroMuted: string; heroLine: string;
 }
 export const lightColors: ThemePalette = {
-  background: '#FFF7FA', surface: '#FFFFFF', ink: '#241A22', muted: '#76636F', accent: '#B32968', accentBright: '#F38DBA',
+  background: '#FFF7FA', surface: '#FFFFFF', ink: '#241A22', muted: '#73606C', accent: '#B32968', accentBright: '#F38DBA',
   onAccent: '#FFFFFF', forest: '#211820', pale: '#F8DFEB', line: '#E8D9E1', danger: '#A32C42', dangerSurface: '#FFF0F2',
   dangerLine: '#EAC2CD', subtle: '#FCF3F7', ringTrack: '#EBDDE5', hero: '#211820', onHero: '#FFF1F8', heroMuted: '#DEC2D1', heroLine: '#624050',
 };
@@ -69,4 +69,39 @@ export function useTheme() {
   const theme = useContext(ThemeContext);
   if (!theme) throw new Error('ThemeProvider must wrap the app before using themed UI.');
   return theme;
+}
+
+/** Appends an alpha channel to a #RRGGBB palette colour so every tint stays on the palette. */
+export function alpha(color: string, opacity: number) {
+  if (color.length !== 7) return color;
+  return `${color}${Math.round(Math.max(0, Math.min(1, opacity)) * 255).toString(16).padStart(2, '0')}`;
+}
+
+export type Elevation = 'rest' | 'raised' | 'glow';
+const elevations: Record<Elevation, { lift: number; drop: number; blur: number; edge: number; spread: number; level: number }> = {
+  rest: { lift: 1, drop: 8, blur: 22, edge: 0.05, spread: 0.06, level: 2 },
+  raised: { lift: 2, drop: 12, blur: 30, edge: 0.1, spread: 0.16, level: 8 },
+  glow: { lift: 1, drop: 10, blur: 26, edge: 0.3, spread: 0.3, level: 4 },
+};
+/**
+ * Soft shadow for a surface. The web gets a two layer boxShadow, iOS the closest single shadow, Android an
+ * elevation, so react-native-web never sees the deprecated shadow* props. `glow` tints the shadow with `tone`.
+ */
+export function elevation(colors: ThemePalette, level: Elevation, tone: string = colors.accent): ViewStyle {
+  const spec = elevations[level];
+  const shade = level === 'glow' ? tone : colors.forest;
+  return Platform.select<ViewStyle>({
+    web: { boxShadow: `0 ${spec.lift}px ${spec.lift * 2}px ${alpha(shade, spec.edge)}, 0 ${spec.drop}px ${spec.blur}px ${alpha(shade, spec.spread)}` },
+    ios: { shadowColor: shade, shadowOffset: { width: 0, height: spec.drop }, shadowOpacity: spec.spread, shadowRadius: spec.blur / 2 },
+    default: { elevation: spec.level, shadowColor: shade },
+  });
+}
+/** Removes the shadow a surface style would otherwise carry. */
+export const flat: ViewStyle = Platform.select<ViewStyle>({ web: { boxShadow: 'none' }, default: { shadowOpacity: 0, elevation: 0 } });
+/** Keyboard focus halo: a soft accent ring on the web, a faint glow where shadows exist natively. */
+export function focusRing(colors: ThemePalette): ViewStyle {
+  return Platform.select<ViewStyle>({
+    web: { boxShadow: `0 0 0 4px ${alpha(colors.accent, 0.22)}` },
+    default: { shadowColor: colors.accent, shadowOpacity: 0.2, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+  });
 }

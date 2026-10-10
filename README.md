@@ -1,123 +1,201 @@
-# Unscroll
+# Unscroll.
 
-**Practice for what’s next.** Unscroll helps students replace distracting social media habits with short, constructive interview practice. Students prepare for internships and full-time jobs through technical challenges, behavioral stories, lessons, and a visible roadmap toward stronger interview skills.
+**Less scrolling. More becoming.**
 
-This is a working hackathon MVP built with Expo, React Native, TypeScript, and SQLite. **Expo Go runs the practice experience but cannot block other iPhone applications.** Actual shielding uses the included custom iOS module and requires a signed development build with Apple's Family Controls capability. See [iPhone setup](docs/IPHONE.md).
+Unscroll swaps your next scroll for a short interview with Jarvis, an AI interviewer, and gives you a break when you pass.
 
-## What's left to do
+[The film](#the-film) · [What it is](#what-it-is) · [Highlights](#highlights) · [Run the demo](#run-the-demo) · [AI and voice](#ai-and-voice-all-on-free-tiers) · [How it is built](#how-it-is-built) · [Honest limits](#honest-limits)
 
-See the full **[coding TODO list](docs/TODO.md)** for everything remaining. Quick summary:
+## The film
 
-| Category | What needs doing | Blocker |
-|----------|------------------|---------|
-| Live AI testing | Groq key, transcription, STAR feedback, coaching | API key |
-| Expo Go on iPhone | Full acceptance run on real device | Mac + iPhone |
-| Native shielding | Swift compile, Family Controls, actual app blocking | Mac + iPhone |
-| Accessibility | VoiceOver, Dynamic Type, Reduce Motion | Physical device |
-| CI / dependencies | First GitHub Actions run, npm audit recheck | Push / npm |
-| Post-demo | Code judge, question banks, notifications, hosted API | After demo |
-| Pre-deployment | HTTPS, privacy/terms, audit resolution | Before public |
+[![Watch the Unscroll launch film](docs/media/unscroll-ad-poster.jpg)](docs/media/unscroll-ad.mp4)
 
-The detailed checklist with sub-items is in [**docs/TODO.md**](docs/TODO.md).
+The launch film was drawn and scored entirely in code: eight scenes built with Remotion and a synthesised soundtrack, all in [marketing/ad](marketing/ad).
 
-## Student experience
+## What it is
 
-1. Watch the animated Unscroll entrance, then choose **Create account** or **Log in**.
-2. Set a major, internship or full-time goal, up to five target companies, practice days per week, sessions per day, session duration, earned app-access duration, and focus apps. Twenty suggested majors map to four MVP interview tracks; a custom major can also be entered.
-3. Upload a PDF or text resume, or paste resume text.
-4. Complete placement: two technical questions and two behavioral questions. Placement assigns beginner through expert. Returning students review their plan, then resume saved progress.
-5. Practice at your level. Experts receive one hard technical question and two behavioral questions. Other levels receive four to six technical questions and two behavioral questions, adjusted to the study duration.
-6. On a failed daily answer, review feedback and answer a different question of the same kind. Complete every required question to earn app-access credit.
-7. Take lessons, ask for coaching, and complete knowledge checks. Promotion requires two evaluated lessons at the current level and successful practice on two different dates with at least 75% session accuracy.
-8. Follow your roadmap: placement, companies, current level, daily and weekly goals, lessons, technical and behavioral scores, streaks, study minutes, and requirements for the next level. Use **Test my knowledge** for a four-question checkpoint at your current level; it gives feedback without changing your level or granting app access.
+1. **Pick your distractions.** Choose the apps that pull you in, then tell Unscroll your major, whether you are aiming for an internship or a full-time job, and up to five target companies. Add your resume as a PDF or text file, or paste it.
+2. **Pass a short interview with Jarvis.** A placement interview sets your starting level, and the daily interview adapts to it. Ask Jarvis to clarify, take a hint if you are stuck, answer by typing or speaking, and read the feedback. A failed answer is not skipped: you review the feedback and answer a different question of the same kind.
+3. **Earn your break.** Finish the required questions and you earn a window of time with the apps you chose. In Expo Go that window is practice mode only; blocking the apps needs the native iPhone build (see [Honest limits](#honest-limits)).
 
-Behavioral practice supports spoken prompts, microphone recording, transcription, editable transcripts, and spoken feedback. AI feedback explains **Situation, Task, Action, and Result (STAR)** using evidence from the student's answer. Technical practice supports code and reasoning, coaching hints, and feedback before a fresh quiz question. Lesson coaching explains concepts without completing the knowledge check. Coaching never grants an unlock.
+## Highlights
 
-No key is required for typed rubric practice and question hints. These are labeled separately from AI coaching. Code receives static or AI review; the MVP does not execute student code in a code judge. This is interview preparation, not a guarantee of code correctness or job readiness.
+<table>
+  <tr>
+    <td align="center" valign="top" width="25%"><img src="docs/media/screen-today.jpg" alt="The Today screen of Unscroll" width="180"><br><b>Today</b><br>Start the day's interview and see your streak.</td>
+    <td align="center" valign="top" width="25%"><img src="docs/media/screen-jarvis.jpg" alt="A conversation with Jarvis" width="180"><br><b>Jarvis</b><br>Ask, take a hint, answer by typing or voice.</td>
+    <td align="center" valign="top" width="25%"><img src="docs/media/screen-evaluation.jpg" alt="The evaluation of an answer" width="180"><br><b>Evaluation</b><br>Your grade, what worked, what to fix.</td>
+    <td align="center" valign="top" width="25%"><img src="docs/media/screen-roadmap.jpg" alt="The draggable road map" width="180"><br><b>Roadmap</b><br>A road you drag across five levels.</td>
+  </tr>
+</table>
 
-Focus goals include Instagram, TikTok, Facebook, X/Twitter, Snapchat, YouTube, Reddit, Threads, Pinterest, Discord, Twitch, and LinkedIn. In a native build, Apple's picker selects the actual applications to shield. Emergency focus release remains available.
+- **Jarvis, a conversation with voice.** Jarvis greets you, asks the question, and answers follow-ups. Jarvis speaks with a Groq voice when a Groq key is set and with the phone's own voice otherwise. You can record an answer, edit the transcript, and send it.
+- **STAR feedback.** Behavioral answers are scored on Situation, Task, Action and Result, using evidence from your own answer.
+- **Hints that cost evaluation points.** Each hint takes 10 points off that answer's evaluation, up to 3 hints. Pass, fail and unlock still use the raw grade.
+- **Three skill standings.** Communication, Technical discussion and Coding each get a standing that follows roughly your last five graded answers.
+- **Adaptive daily interview and placement.** Placement sets your level; the daily interview follows it.
+- **No skipping a failed answer.** Read the feedback, then answer a different question of the same kind.
+- **Eight lessons** with coaching and a knowledge check each. Coaching explains the idea and never completes the check.
+- **A draggable road map** through five levels (Beginner, Intermediate, Advanced, Expert, Master), with the lessons along the way.
+- **Streak** and study minutes, so the daily habit is visible.
+- **Themes.** Light, Dark or System, with Pink, Red, Blue or Green accents.
+- **Personalised** from your major, your resume and your target companies. Companies are context for the coaching, not a claim about what an employer will ask.
 
-## Run on Windows or Mac
+## Run the demo
 
-Use **Node.js 24 or newer** and npm. The server uses Node's built-in SQLite; no separate database installation is needed.
+This runs the app on an iPhone in Expo Go, with the server on your computer. Windows works the same way as a Mac; only the copy command differs.
 
-```sh
-git clone https://github.com/Charlesganu2004/Whitman-Hackathon.git
-cd Whitman-Hackathon
-npm ci --ignore-scripts
-npm run check:environment
+**You need**
+
+- Node.js 24 and git. `npm run check:environment` fails on any other major version of Node.
+- An iPhone with Expo Go from the App Store. The installed Expo Go must support Expo SDK 57.
+- The iPhone and the computer on the same Wi-Fi.
+- An NVIDIA key and a Groq key for the full experience. Neither is in this repository, on purpose. Ask Charles for the team keys privately, or create free ones: [docs/NVIDIA.md](docs/NVIDIA.md) and [docs/GROQ-HACKATHON.md](docs/GROQ-HACKATHON.md). Without keys the app still runs in rubric mode.
+
+**Steps**
+
+1. Clone the repository.
+
+   ```bash
+   git clone https://github.com/Charlesganu2004/Whitman-Hackathon.git
+   cd Whitman-Hackathon
+   ```
+
+2. Install the packages. The optional second command prints PASS when Node and SQLite are ready.
+
+   ```bash
+   npm install
+   npm run check:environment
+   ```
+
+3. Create `.env` and paste the keys. On Windows, use `copy .env.example .env`.
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Open `.env` and fill in the lines below. Remove the `#` in front of `AI_PROVIDER=nvidia`: with both keys set and no `AI_PROVIDER`, the server grades with Groq first.
+
+   ```dotenv
+   NVIDIA_API_KEY=your_nvidia_key
+   GROQ_API_KEY=your_groq_key
+   AI_PROVIDER=nvidia
+   ```
+
+   `.env` is ignored by git, so every computer that runs the server needs its own copy. Never commit it, never paste a key into chat or a pull request, and never put a key in an `EXPO_PUBLIC_` variable. If you run `npm run demo` before this step, it creates `.env` from the example for you; add the keys and run it again.
+
+4. Start the API and Expo together. The terminal prints whether AI feedback is on and the address your phone will use.
+
+   ```bash
+   npm run demo
+   ```
+
+5. Scan the QR code with the iPhone Camera and open it in Expo Go. The app finds your computer by itself.
+
+6. Tap **Create account**. A new account goes straight into onboarding. Use fictional details: in AI mode your answers and resume text are sent to the AI provider.
+
+No iPhone? Run `npm run server` in one terminal and `npm run web` in another, then open `http://localhost:8081/iphone.html` to see the app inside an iPhone frame.
+
+The full guide is in [docs/DEMO.md](docs/DEMO.md).
+
+**If it does not connect**
+
+- Put the phone and the computer on the same Wi-Fi. Guest and public networks often isolate devices; a private hotspot works.
+- On the iPhone, open Settings, then Expo Go, and turn on Local Network. Without it the phone cannot reach your computer.
+- Allow incoming connections for `node` when macOS or Windows asks. If you dismissed the prompt, allow it in the firewall settings.
+- Open `http://<computer address>:3001/health` in the phone's browser, using the address `npm run demo` printed. A JSON reply with `"ok":true` means the network is fine.
+- Do not use an Expo tunnel. It forwards the app bundle but not the API.
+- When the server cannot be reached, sign-in shows an error and the login screen has a **Server connection** panel where you can enter the computer's address and tap **Test connection**. If you are already signed in with saved data, the app shows "Offline view. Reconnect before starting or submitting practice." with a **Reconnect** button, and starting practice is disabled until the server answers.
+- If the terminal says "AI feedback: off", the server found no usable key. Check that `.env` sits in the repository root, then stop `npm run demo` and start it again.
+
+## AI and voice, all on free tiers
+
+| Job | Provider | Model | Measured |
+|---|---|---|---|
+| Grading, hints and Jarvis's replies | NVIDIA hosted API, free | `nvidia/nemotron-3-super-120b-a12b` | Live replies validated in 1.6 to 2.6 s |
+| Speech to text for recorded answers | Groq, free tier | `whisper-large-v3-turbo` | A test sentence transcribed word for word in about 0.5 s |
+| Jarvis's voice | Groq, free tier | `canopylabs/orpheus-v1-english` | Speech returned in 0.5 to 1.0 s |
+| Fallback voice | The phone's built-in voice (`expo-speech`) | none | Used when there is no Groq key or Groq errors |
+
+Measured on 2026-10-10 on one development machine, so treat these as a snapshot, not a promise. Four other candidate models were tried and passed over: they were slower (5.4 s and 18 s) or timed out at 35 s.
+
+- NVIDIA cannot transcribe audio, so recorded answers need a Groq key (an OpenAI key also works). Typed answers and keyboard dictation need neither.
+- Orpheus accepts 200 characters per request and has a small daily quota. The server sends long text in pieces and the app caches the audio for each question. Accept the model terms once in the Groq console, or the phone's voice is used.
+- No key at all: rubric practice still works. Grading, hints and Jarvis's answers come from the built-in rubric, nothing is sent to an AI provider, and the app labels that feedback "Rubric feedback" instead of AI feedback.
+- OpenAI is supported as another provider if you bring your own key. It is not part of the demo setup. The environment variables are listed in [.env.example](.env.example).
+- Run `npm run check:ai` to make one live grading call with fictional data. It prints the provider, model and latency, and never prints a key. With no key it says rubric mode is active and sends nothing.
+
+## How it is built
+
+**Stack.** Expo SDK 57, React Native 0.86, React 19.2, react-native-web 0.21 and TypeScript for the app. A Node 24 server on `node:http` with the built-in `node:sqlite`, so there is no database to install. Resume PDFs are read with `unpdf`.
+
+**Where things live**
+
+```text
+App.tsx                    App shell: sign-in, onboarding, tabs, practice flow
+src/core/                  Pure logic, no React: engine.ts (sessions, placement, streaks,
+                           lessons), skills.ts (standings, hint cost), roadmap.ts,
+                           interview.ts, draft.ts, content.ts (questions and lessons)
+src/ui/                    Screens and components, including InterviewChat.tsx,
+                           JourneyMap.tsx and SkillStandings.tsx
+src/services/              api.ts (finds the server), voice.ts, cache.*.ts, focus.ts
+server/                    app.mjs (routes), ai.mjs (providers), index.mjs (start),
+                           resume.mjs and pdf-worker.mjs
+modules/interview-focus/   Local Expo module and Swift extension for Apple Screen Time
+marketing/ad/              The launch film, a Remotion project (see SCRIPT.md there)
+public/                    iphone.html, the iPhone frame for desktop previews
+scripts/                   dev.mjs, check-ai.mjs, check-environment.mjs
+tests/                     node:test files
+docs/                      Guides and notes
 ```
 
-Start the API in one terminal:
+**Data.** The server stores accounts (with salted password hashes), session tokens, profiles, resume text, interviews, lessons and study history in `server/data/interview.sqlite`, which git ignores. On the phone, the app keeps a cache in Expo SQLite and the sign-in token in SecureStore. The browser build uses browser storage.
 
-```sh
-npm run server
+**Commands**
+
+```bash
+npm test                   # deterministic tests, no network, no live AI (119 or more)
+npm run typecheck          # tsc --noEmit
+npm run check:ai           # one live grading call with fictional data
+npm run check:environment  # Node 24 and SQLite check
+npm run server             # the API alone, on port 3001
+npm run export:web         # export the web bundle
+npm run export:ios         # export the iOS JavaScript bundle
 ```
 
-Start Expo in a second terminal:
+GitHub Actions runs the typecheck, the tests, both exports and the native-config checks on every push (`.github/workflows/verify.yml`). See [docs/TESTING.md](docs/TESTING.md) for the manual acceptance cases.
 
-```sh
-npm start
+**The film**
+
+```bash
+cd marketing/ad
+npm install
+npm run studio             # preview and scrub the film
+npm run render:hd          # 1080p to out/unscroll-ad-1080p.mp4
+npm run render             # 4K master to out/unscroll-ad-4k.mp4
+npm run audio              # rebuild the soundtrack
 ```
 
-Install Expo Go on the iPhone, connect phone and computer to the same Wi-Fi, and scan Expo's QR code with the iPhone Camera. The project uses **Expo SDK 57**; the installed Expo Go must support it. A Mac is not required for the Expo Go practice experience.
+It is authored at 1920 by 1080 and 60 fps. The 4K master stays out of git; the 1080p copy is in `docs/media`.
 
-On the login screen, open **Server connection**, enter the computer's Wi-Fi IPv4 address, such as `http://192.168.1.25:3001`, and tap **Test connection**. On a phone, `localhost` refers to the phone itself. Find the computer's address with `ipconfig` on Windows or `ipconfig getifaddr en0` on Mac. Permit Node on the private development network. Public Wi-Fi may isolate devices; a private hotspot can help. A Metro tunnel exposes the bundle, not the separate API.
+## Honest limits
 
-For a browser preview, run `npm run web`. The browser defaults to the computer's API at port 3001. The layout is designed for a 390 by 844 iPhone viewport and keeps content within 430 points on desktop.
+- **Expo Go is practice mode.** It cannot block other apps. Shielding needs the signed native iPhone build with Apple Screen Time, and that build has not been tested on a device. See [docs/IPHONE.md](docs/IPHONE.md).
+- **Student code is reviewed, never executed.** Coding answers get static and AI review. There is no code judge.
+- **NVIDIA's free access is rate limited.** Its trial terms cover evaluation and prototyping, not a public launch.
+- **Keys live only in the server's `.env`.** Git ignores that file, so each computer that runs the server needs its own.
+- **15 high-severity `npm audit` entries** sit in transitive Expo and Metro packages, and no compatible patch exists yet.
+- **Local setup only.** The server speaks plain HTTP on a private network. A public deployment needs HTTPS, a privacy policy, terms and an account review.
+- **In progress, not finished:** saving the typed answer when you tap Save and leave; an end-of-session recap with weak topics and next steps; a guard against starting practice during an earned break; keeping missed-answer feedback for that recap; a designed offline state with automatic retry.
 
-To configure the bundled API address, copy `.env.example` to `.env`, set `EXPO_PUBLIC_API_URL`, and restart Expo. Use `cp .env.example .env` on Mac or `Copy-Item .env.example .env` in PowerShell.
+Practice here is preparation, not a guarantee of correct code or a job offer. What is left, including device testing, an accessibility audit and live provider testing, is tracked in [docs/TODO.md](docs/TODO.md).
 
-## Low-cost AI voice and coaching
+## Team and credits
 
-Groq supports transcription and structured feedback with one server key. Add these values to `.env`, then restart the API:
+Unscroll was built at the Whitman Hackathon. Charles led the product scope and built the first version; his contribution and the hand-off notes are in [docs/TEAM-HANDOFF.md](docs/TEAM-HANDOFF.md).
 
-```dotenv
-AI_PROVIDER=groq
-AI_SPEECH_PROVIDER=groq
-GROQ_API_KEY=your_server_key
-GROQ_MODEL=openai/gpt-oss-20b
-GROQ_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
-```
-
-Review [Groq free-plan limits](https://console.groq.com/docs/rate-limits), [speech pricing](https://console.groq.com/docs/speech-to-text), and [structured outputs](https://console.groq.com/docs/structured-outputs). Free quotas are bounded and can change. GitHub Models [retired on July 30, 2026](https://docs.github.com/en/github-models), so it is not an available provider.
-
-For this hackathon, start with the free plan. See [Groq setup, quotas, and cost examples](docs/GROQ-HACKATHON.md). A teammate must configure the key and complete live voice tests; paid billing is not required to run typed rubric practice. See [team handoff](docs/TEAM-HANDOFF.md) for Charles's contribution and remaining Mac/iPhone testing.
-
-For OpenAI, select `AI_PROVIDER=openai` and `AI_SPEECH_PROVIDER=openai`, set `OPENAI_API_KEY`, `OPENAI_MODEL=gpt-4.1-mini`, and `OPENAI_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe`. Speech and grading providers can be selected independently. Leave keys empty for rubric practice.
-
-**Never put API keys in `EXPO_PUBLIC_` variables or commit `.env`.** Keys stay on the Node server. AI mode sends answers and relevant resume text to the configured provider; recordings are sent for transcription. Usage charges may apply. The interviewer uses the device speech engine to read prompts and feedback aloud. This MVP uses recorded answer turns, not a continuous live audio connection.
-
-## Appearance and roadmap
-
-Profile contains settings for **Light, Dark, or System** mode and **Pink, Red, Blue, or Green** accents. Appearance persists on the device. The interface uses original lock-orbit artwork, gentle ambient motion, spring press feedback, animated skill meters, and reduced-motion support. Navigation includes Today, Practice, Learn, Roadmap, and Profile. The top-right avatar opens Profile; optional photos stay on the device and are scoped to the signed-in account.
-
-Target companies are preparation context for AI coaching, not a claim that the app knows an employer's exact interview questions. The Learn tab links to [NeetCode](https://neetcode.io/roadmap), [LeetCode study plans](https://leetcode.com/studyplan/), and [HackerRank](https://www.hackerrank.com/dashboard). Unscroll's question bank and worked examples are original.
-
-Roadmap distinguishes goals from evidence: completed daily interviews count toward the daily goal; actual study dates count toward the weekly goal; current-level lessons and qualifying practice dates determine promotion. Extra practice remains available after reaching a goal.
-
-## SQLite and account data
-
-The server stores accounts, salted password hashes, session tokens, profiles, resume text, interviews, lessons, and study history in `server/data/interview.sqlite`. SQLite and environment files are ignored by Git. Native cache uses Expo SQLite and tokens use SecureStore. Browser preview uses browser storage.
-
-Use fictional data for the hackathon. Local HTTP setup is intended for a private development network. Public deployment needs HTTPS and a deployment-specific account, privacy, and operational review.
-
-## Verification
-
-```sh
-npm run typecheck
-npm test
-npx expo install --check
-npm run export:web
-npm run export:ios
-node modules/interview-focus/verify-plugin.cjs
-node modules/interview-focus/verify-expo-config.cjs
-```
-
-See [test instructions and receipts](docs/TESTING.md) for automated coverage and manual acceptance cases. GitHub Actions checks Ubuntu and generated iOS configuration on macOS. An iOS JavaScript export does not prove Swift compilation, signing, entitlement approval, microphone behavior, or app shielding. Physical Mac/iPhone and live-provider tests remain required.
-
-## Design and source review
-
-The original interface draws layout inspiration from the requested iOS galleries. See [design notes](docs/DESIGN.md). The [REA repository](https://github.com/morluto/rea) informed structure, network, and screenshot inspection methodology; its code was not installed or executed. Installed [Master Repo skills](https://github.com/Charlesganu2004/Master-Repo-Use) guided architecture, design, review, and verification. The [local-index benchmark](https://charlesganu2004.github.io/Global-Ai-Setup-Benchmark/) informed local retrieval. No remote installer was run.
-
-See [intake records](docs/INTAKE.md) for reviewed commits, PDF extraction boundaries, and remaining dependency advisories. The app contains `src/core` interview policy, `src/ui` screens, `src/services` adapters, `server` API/SQLite/AI, and `modules/interview-focus` with its Expo plugin for the custom iOS build.
+- The interface draws layout inspiration from the requested iOS galleries. See [docs/DESIGN.md](docs/DESIGN.md).
+- The [REA repository](https://github.com/morluto/rea) informed the structure, network and screenshot inspection method. Its code was not installed or executed.
+- The [Master Repo skills](https://github.com/Charlesganu2004/Master-Repo-Use) guided architecture, design, review and verification, and the [local-index benchmark](https://charlesganu2004.github.io/Global-Ai-Setup-Benchmark/) informed local retrieval.
+- The Learn tab links to [NeetCode](https://neetcode.io/roadmap), [LeetCode study plans](https://leetcode.com/studyplan/) and [HackerRank](https://www.hackerrank.com/dashboard). Unscroll's own question bank and worked examples are original.
+- Reviewed commits, PDF extraction boundaries and dependency advisories are in [docs/INTAKE.md](docs/INTAKE.md).

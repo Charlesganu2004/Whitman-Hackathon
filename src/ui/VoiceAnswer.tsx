@@ -5,14 +5,15 @@ import { File } from 'expo-file-system';
 import * as Speech from 'expo-speech';
 import { AudioWave } from './AudioWave';
 import { request } from '../services/api';
+import { stopJarvis } from '../services/voice';
 import { Body, Button } from './components';
 
-export function VoiceAnswer({ prompt, onTranscript, onError, enabled }: { prompt: string; onTranscript: (text: string) => void; onError: (text: string) => void; enabled: boolean }) {
+export function VoiceAnswer({ prompt, onTranscript, onError, enabled, listen = true }: { prompt: string; onTranscript: (text: string) => void; onError: (text: string) => void; enabled: boolean; listen?: boolean }) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const state = useAudioRecorderState(recorder);
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; void Speech.stop(); void setAudioModeAsync({ allowsRecording: false }); }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; stopJarvis(); void setAudioModeAsync({ allowsRecording: false }); }; }, []);
   useEffect(() => {
     if (state.isRecording && state.durationMillis >= 120000) void stop();
   }, [state.durationMillis, state.isRecording]);
@@ -20,7 +21,7 @@ export function VoiceAnswer({ prompt, onTranscript, onError, enabled }: { prompt
     try {
       const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) throw new Error('Microphone permission denied. Enable it in Settings or type your answer below.');
-      await Speech.stop();
+      stopJarvis();
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
       await recorder.prepareToRecordAsync();
       recorder.record();
@@ -44,7 +45,7 @@ export function VoiceAnswer({ prompt, onTranscript, onError, enabled }: { prompt
   }
   return <View style={{ gap: 12 }}>
     <AudioWave active={state.isRecording || busy} />
-    <Button title="Hear the interviewer" secondary onPress={() => { void Speech.stop().then(() => Speech.speak(prompt, { rate: 0.95 })); }} />
+    {listen && <Button title="Hear the interviewer" secondary onPress={() => { stopJarvis(); void Speech.stop().then(() => Speech.speak(prompt, { rate: 0.95 })); }} />}
     {enabled ? <Button title={state.isRecording ? `Stop and transcribe · ${Math.floor(state.durationMillis / 1000)}s` : 'Record your answer'} secondary busy={busy} onPress={() => { void (state.isRecording ? stop() : start()); }} /> : <Body muted>Voice transcription needs an AI key on the server. Rehearse aloud, then type your answer for rubric feedback.</Body>}
     {state.isRecording && <Body>Recording. Two-minute maximum. Stop when you finish.</Body>}
   </View>;

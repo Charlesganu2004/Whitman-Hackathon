@@ -52,7 +52,17 @@ if (configuredUrl) {
 const configuredPort = Number(process.env.PORT || 3001);
 const port = Number.isInteger(configuredPort) && configuredPort > 0 && configuredPort <= 65535 ? configuredPort : 3001;
 for (const address of addresses) console.log(`Phone API candidate: http://${address}:${port}`);
-console.log(`AI key configured: ${Boolean(process.env.OPENAI_API_KEY?.trim())}`);
+const keyConfigured = name => Boolean(process.env[name]?.trim());
+console.log(`AI keys configured: GROQ=${keyConfigured('GROQ_API_KEY')}, NVIDIA=${keyConfigured('NVIDIA_API_KEY')}, OPENAI=${keyConfigured('OPENAI_API_KEY')}`);
+try {
+  const { createAI } = await import('../server/ai.mjs');
+  const ai = createAI();
+  console.log(`AI grading provider: ${ai.enabled ? ai.provider : 'rubric (no usable provider key)'}`);
+  console.log(`Speech transcription provider: ${ai.speechProvider ?? 'none (voice needs GROQ_API_KEY or OPENAI_API_KEY; typed answers still work)'}`);
+} catch (error) {
+  console.error(`FAIL: AI provider settings could not be resolved. ${error.message}`);
+  failed = true;
+}
 console.log('AI credentials and network reachability are not validated by this check. No provider request was sent.');
 console.log(failed ? 'FAIL: Environment check failed.' : 'PASS: Node 24 and SQLite environment checks passed.');
 process.exitCode = failed ? 1 : 0;
