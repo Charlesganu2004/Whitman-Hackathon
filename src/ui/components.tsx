@@ -51,6 +51,7 @@ export function Meter({ value, label }: { value: number; label?: string }) {
   return <View style={{ gap: 8 }}>{label && <Body muted>{label}</Body>}<View accessibilityRole="progressbar" accessibilityLabel={label ?? 'Progress'} accessibilityValue={{ min: 0, max: 100, now: Math.round(percent) }} style={styles.meter}><Animated.View style={[styles.fill, { width: progress.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'], extrapolate: 'clamp' }) }]} /></View></View>;
 }
 export function Message({ text }: { text: string }) { const { colors, styles } = useComponentStyles(); return <View accessibilityRole="alert" accessibilityLiveRegion="polite" aria-live="polite" style={styles.message}><Text style={{ color: colors.danger, fontSize: 15, lineHeight: 22 }}>{text}</Text></View>; }
+export function OfflineBanner() { const { colors, styles } = useComponentStyles(); return <View accessibilityRole="alert" aria-live="polite" style={[styles.message, { backgroundColor: colors.pale, borderColor: colors.accent }]}><Text style={{ color: colors.ink, fontSize: 15, lineHeight: 22 }}>{'Working offline — your saved progress is available. Connect to submit answers.'}</Text></View>; }
 export function makeStyles(colors: ThemePalette) { return StyleSheet.create({
   label: { color: colors.muted, fontSize: 11, lineHeight: 17, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
   title: { color: colors.ink, fontSize: 38, lineHeight: 43, fontWeight: '700', letterSpacing: -1.5 },

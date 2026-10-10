@@ -31,3 +31,12 @@ export async function clearAccount() {
   await SecureStore.deleteItemAsync('interview-token');
   await (await database).runAsync('DELETE FROM cache WHERE key = ?', 'snapshot');
 }
+export async function readDraft(accountId: string, questionId: string): Promise<string | null> {
+  return get('answer-draft:' + accountId + ':' + questionId);
+}
+export async function writeDraft(accountId: string, questionId: string, text: string) {
+  await set('answer-draft:' + accountId + ':' + questionId, text);
+}
+export async function clearDraft(accountId: string, questionId: string) {
+  await (await database).runAsync('DELETE FROM cache WHERE key = ?', 'answer-draft:' + accountId + ':' + questionId);
+}

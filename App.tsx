@@ -7,9 +7,9 @@ import { File } from 'expo-file-system';
 import { LESSONS } from './src/core/content';
 import type { Feedback, Lesson, Profile, Snapshot } from './src/core/types';
 import { configureApi, getApiUrl, initializeApi, request } from './src/services/api';
-import { clearAccount, readAvatar, writeAvatar, readSnapshot, readToken, writeSnapshot, writeToken } from './src/services/cache';
+import { clearAccount, readAvatar, writeAvatar, readSnapshot, readToken, writeSnapshot, writeToken, readDraft, writeDraft, clearDraft } from './src/services/cache';
 import { authorizeFocus, chooseFocusApps, emergencyRelease, focusStatus, lockFocus, unlockFocus } from './src/services/focus';
-import { Body, Button, Card, Chips, Field, Label, Message, Meter, Title } from './src/ui/components';
+import { Body, Button, Card, Chips, Field, Label, Message, Meter, OfflineBanner, Title } from './src/ui/components';
 import { VoiceAnswer } from './src/ui/VoiceAnswer';
 import { ThemeProvider, useTheme } from './src/ui/theme';
 import { Dashboard } from './src/ui/Dashboard';
@@ -71,6 +71,7 @@ function Application() {
   const [focus, setFocus] = useState({ supported: false, authorized: false, selectedCount: 0, blocking: false, emergencyReleased: false, reason: 'Checking focus support…' });
   const [now, setNow] = useState(Date.now());
   const scroll = useRef<ScrollView>(null);
+  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profile = snapshot?.profile;
   const session = snapshot?.activeSession;
   const question = session?.questions[session.index];
@@ -111,7 +112,7 @@ function Application() {
           const cached = await readSnapshot();
           if (cached) { setSnapshot(cached); populate(cached.profile); }
           try { const data = await request<Snapshot>('/me'); await accept(data); populate(data.profile); }
-          catch (e) { if (cached) { setOffline(true); setError('Offline view. Reconnect before starting or submitting practice.'); } else { await clearAccount(); setError(e instanceof Error ? e.message : 'Sign in again.'); } }
+          catch (e) { if (cached) { setOffline(true); } else { await clearAccount(); setError(e instanceof Error ? e.message : 'Sign in again.'); } }
         }
         await refreshFocus(); await health();
       } catch (e) { setError(e instanceof Error ? e.message : 'Could not initialize app.'); }
@@ -123,6 +124,8 @@ function Application() {
     const listener = AppState.addEventListener('change', state => { if (state === 'active') { setNow(Date.now()); void (async () => { try { if (await readToken()) { await accept(await request<Snapshot>('/me')); setOffline(false); } else await refreshFocus(); } catch { setOffline(true); } })(); } });
     return () => listener.remove();
   }, []);
+  useEffect(() => { if (!practice || !profile?.id || !question?.id) return; const id = profile.id; const qid = question.id; const text = answer; draftTimer.current && clearTimeout(draftTimer.current); draftTimer.current = setTimeout(() => { void writeDraft(id, qid, text).catch(() => {}); }, 800); return () => { draftTimer.current && clearTimeout(draftTimer.current); }; }, [answer, question?.id, profile?.id, practice]);
+  useEffect(() => { if (!practice || !profile?.id || !question?.id || feedback !== null) return; let active = true; readDraft(profile.id, question.id).then(draft => { if (active && draft && !answer) setAnswer(draft); }).catch(() => {}); return () => { active = false; }; }, [question?.id, practice]);
   useEffect(() => { scroll.current?.scrollTo({ y: 0, animated: false }); }, [tab, step, practice, selectedLesson?.id, question?.id, feedback]);
 
   async function act(work: () => Promise<void>) {
@@ -178,6 +181,7 @@ function Application() {
     if (!session || !question) return;
     const data = await request<{ feedback: Feedback; snapshot: Snapshot }>(`/sessions/${session.id}/answer`, { questionId: question.id, answer });
     await accept(data.snapshot); setFeedback(data.feedback); setAnswer('');
+    await clearDraft(profile!.id, question!.id);
     if (data.snapshot.stats.unlockedUntil && data.snapshot.activeSession?.status === 'completed' && data.snapshot.activeSession.kind === 'daily' && focus.supported && focus.authorized && focus.selectedCount > 0) {
       try { await unlockFocus(data.snapshot.stats.unlockedUntil); await refreshFocus(); }
       catch (e) { setError(`Quiz passed, but iPhone unlock failed: ${e instanceof Error ? e.message : 'unknown error'}. Use Release focus in Settings.`); }
@@ -240,9 +244,9 @@ function Application() {
 
     if (selectedLesson) return <View style={s.stack}><Button title="Back to lessons" secondary onPress={() => { setSelectedLesson(null); setFeedback(null); }} /><Label>{selectedLesson.topic} · {selectedLesson.minutes} min</Label><Title>{selectedLesson.title}</Title><Body muted>{selectedLesson.summary}</Body>{selectedLesson.sections.map(section => <Card key={section.title}><Title small>{section.title}</Title><Body>{section.body}</Body></Card>)}<TechnicalCoach key={selectedLesson.id} lessonId={selectedLesson.id} offline={offline} onError={setError} /><Card><Label>Check your understanding</Label><Body>{selectedLesson.check.prompt}</Body>{selectedLesson.check.choices.map((choice, i) => <Pressable accessibilityRole="radio" accessibilityState={{ checked: lessonChoice === i }} aria-checked={lessonChoice === i} key={choice} onPress={() => setLessonChoice(i)} style={[s.choice, lessonChoice === i && { borderColor: colors.accent, backgroundColor: colors.pale }]}><Body>{choice}</Body></Pressable>)}<Body muted>{profile!.completedLessonIds.includes(selectedLesson.id) ? 'Completed. You can review the lesson anytime.' : now - lessonStartedAt < 15000 ? 'Read the lesson before checking your answer. Ready in ' + Math.max(1, Math.ceil((15000 - (now - lessonStartedAt)) / 1000)) + ' seconds.' : 'Choose the answer that best applies the lesson.'}</Body><Button title="Check answer and finish lesson" busy={busy} disabled={lessonChoice < 0 || offline || (!profile!.completedLessonIds.includes(selectedLesson.id) && now - lessonStartedAt < 15000)} onPress={() => { void act(async () => { const data = await request<{ feedback: Feedback; snapshot: Snapshot }>(`/lessons/${selectedLesson.id}/complete`, { answer: lessonChoice }); await accept(data.snapshot); setNotice(data.feedback.passed ? 'Lesson complete. Your learning progress is saved.' : data.feedback.explanation); if (!data.feedback.passed) setError(data.feedback.explanation); }); }} /></Card></View>;
 
-    if (tab === 'today') return <Dashboard snapshot={snapshot} focus={focus} remaining={remaining} busy={busy} offline={offline} recommended={LESSONS.find(lesson => levelOrder.indexOf(lesson.level) <= levelOrder.indexOf(profile!.level) && !profile!.completedLessonIds.includes(lesson.id))} onManage={() => setTab('settings')} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
+    if (tab === 'today') return <Dashboard snapshot={snapshot} focus={focus} remaining={remaining} busy={busy} offline={offline} recommended={LESSONS.find(lesson => levelOrder.indexOf(lesson.level) <= levelOrder.indexOf(profile!.level) && !profile!.completedLessonIds.includes(lesson.id))} onManage={() => setTab('settings')} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else { if (remaining > 0) { setNotice(`You earned ${remaining} minutes of app access. Come back after your break to practice again.`); return; } await startSession(needsPlacement ? 'placement' : 'daily'); } }); }} />;
 
-    if (tab === 'practice') return <PracticeHub onCheckpoint={() => { void act(() => startSession('checkpoint')); }} snapshot={snapshot} busy={busy} offline={offline} ai={gradingMode === 'ai'} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else await startSession(needsPlacement ? 'placement' : 'daily'); }); }} />;
+    if (tab === 'practice') return <PracticeHub onCheckpoint={() => { void act(() => startSession('checkpoint')); }} snapshot={snapshot} busy={busy} offline={offline} ai={gradingMode === 'ai'} onLearn={() => setTab('learn')} onStart={() => { void act(async () => { if (session?.status === 'active' || session?.status === 'review') { setPractice(true); setFeedback(session.status === 'review' ? session.review || null : null); } else { if (remaining > 0) { setNotice(`You earned ${remaining} minutes of app access. Come back after your break to practice again.`); return; } await startSession(needsPlacement ? 'placement' : 'daily'); } }); }} />;
     if (tab === 'learn') return <Lessons profile={profile!} lessons={LESSONS} busy={busy} onOpen={lesson => { void act(() => openLesson(lesson)); }} />;
 
     if (tab === 'progress') return <Progress snapshot={snapshot} />;
@@ -255,7 +259,7 @@ function Application() {
   return <SafeAreaView style={s.app}><AmbientBackground /><StatusBar style={isDark ? 'light' : 'dark'} /><KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <View style={s.header}><Text style={s.brand}>unscroll<Text style={{ color: colors.accent }}>.</Text></Text><View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}><AmbientMotion />{snapshot && !needsOnboarding && <Avatar name={snapshot.profile.name} image={avatar} onPress={() => { setPractice(false); setSelectedLesson(null); setTab('settings'); }} />}</View></View>
     <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" contentContainerStyle={s.scroll}><View style={s.content}>
-      {error !== '' && <Message text={error} />}{notice !== '' && <Card green><Body>{notice}</Body></Card>}
+      {offline && <OfflineBanner />}{error !== '' && <Message text={error} />}{notice !== '' && <Card green><Body>{notice}</Body></Card>}
       {offline && <Button title="Reconnect" secondary busy={busy} onPress={() => { void act(async () => { await accept(await request<Snapshot>('/me')); setOffline(false); await health(); }); }} />}
       {renderContent()}
     </View></ScrollView>

@@ -19,3 +19,12 @@ export async function clearAccount() {
   sessionStorage.removeItem('interview-token');
   sessionStorage.removeItem('interview-snapshot');
 }
+export async function readDraft(accountId: string, questionId: string): Promise<string | null> {
+  return localStorage.getItem('interview-answer-draft:' + accountId + ':' + questionId);
+}
+export async function writeDraft(accountId: string, questionId: string, text: string) {
+  localStorage.setItem('interview-answer-draft:' + accountId + ':' + questionId, text);
+}
+export async function clearDraft(accountId: string, questionId: string) {
+  localStorage.removeItem('interview-answer-draft:' + accountId + ':' + questionId);
+}
