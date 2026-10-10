@@ -232,6 +232,9 @@ export function createAI(options = {}) {
   const voiceAvailable = Boolean(keys.groq.trim());
   const ttsModel = (options.ttsModel ?? process.env.GROQ_TTS_MODEL)?.trim() || 'canopylabs/orpheus-v1-english';
   const ttsVoice = (options.ttsVoice ?? process.env.GROQ_TTS_VOICE)?.trim() || 'troy';
+  // One vocal direction for the interviewer, set by the host. Spoken text can never add its own: speechChunks turns its brackets into parentheses.
+  const ttsStyle = (options.ttsStyle ?? process.env.GROQ_TTS_STYLE ?? 'cheerful').toLowerCase().replace(/[^a-z ]/g, '').trim().slice(0, 24).trim();
+  const direction = ttsStyle ? `[${ttsStyle}] ` : '';
 
   async function synthesize(input) {
     let response;
@@ -248,9 +251,9 @@ export function createAI(options = {}) {
 
   async function speak(text) {
     if (!voiceAvailable) throw new AIError(`${INTERVIEWER_NAME} voice needs GROQ_API_KEY on the host. The device voice will be used instead.`);
-    const chunks = speechChunks(text);
+    const chunks = speechChunks(text, SPEECH_CHUNK - direction.length);
     if (!chunks.length) throw new AIError('There is no text to speak.');
-    const audio = joinWav(await Promise.all(chunks.map(synthesize)));
+    const audio = joinWav(await Promise.all(chunks.map(chunk => synthesize(direction + chunk))));
     return { audio: audio.toString('base64'), mimeType: 'audio/wav' };
   }
 
@@ -267,5 +270,5 @@ export function createAI(options = {}) {
     if (!validText(value.text, 32_000)) throw new AIError('No speech was recognized. Record again or type your response.');
     return value.text.trim().slice(0, 16_000);
   }
-  return { grade, coach, lessonCoach, converse, speak, voiceAvailable, ttsModel, ttsVoice, transcribe, enabled, provider, model: enabled ? models[provider] : null, speechProvider, speechAvailable: Boolean(speechProvider) };
+  return { grade, coach, lessonCoach, converse, speak, voiceAvailable, ttsModel, ttsVoice, ttsStyle, transcribe, enabled, provider, model: enabled ? models[provider] : null, speechProvider, speechAvailable: Boolean(speechProvider) };
 }

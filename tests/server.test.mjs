@@ -589,7 +589,7 @@ test('speak returns base64 WAV, shares identical requests and never synthesizes 
   assert.deepEqual(Buffer.from(first.body.audio, 'base64'), wavBytes());
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.groq.com/openai/v1/audio/speech');
-  assert.equal(calls[0].body.input, 'Tell me about a time you led a team.');
+  assert.equal(calls[0].body.input, '[cheerful] Tell me about a time you led a team.');
   const second = await app.request('/ai/speak', 'POST', { text: 'Tell me about a time you led a team.' });
   assert.deepEqual(second.body, first.body); assert.equal(calls.length, 1, 'the cache answers without another provider call');
   const [a, b] = await Promise.all([app.request('/ai/speak', 'POST', { text: 'What would you do differently?' }), app.request('/ai/speak', 'POST', { text: 'What would you do differently?' })]);

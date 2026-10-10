@@ -423,7 +423,7 @@ test('Jarvis voice posts the documented Groq speech body and returns base64 WAV,
   assert.equal(requests[0].url, 'https://api.groq.com/openai/v1/audio/speech');
   assert.equal(requests[0].options.method, 'POST');
   assert.equal(requests[0].options.headers.Authorization, 'Bearer gsk-test-secret');
-  assert.deepEqual(requests[0].body, { model: 'canopylabs/orpheus-v1-english', input: 'Tell me about a time you led a team.', voice: 'troy', response_format: 'wav' });
+  assert.deepEqual(requests[0].body, { model: 'canopylabs/orpheus-v1-english', input: '[cheerful] Tell me about a time you led a team.', voice: 'troy', response_format: 'wav' });
   const custom = createAI({ groqApiKey: 'gsk-test', ttsModel: 'canopylabs/other', ttsVoice: 'hannah', fetchImpl: async (_url, options) => { requests.push({ body: JSON.parse(options.body) }); return audioReply(wavFile(10)); } });
   await custom.speak('Hello there.');
   assert.equal(requests.at(-1).body.model, 'canopylabs/other'); assert.equal(requests.at(-1).body.voice, 'hannah');
@@ -451,7 +451,7 @@ test('Jarvis voice splits long text on sentence boundaries inside the 200 charac
   const long = sentences.join(' ');
   assert.ok(long.length > 600);
   const inputs = [];
-  const ai = createAI({ groqApiKey: 'gsk-test', fetchImpl: async (_url, options) => { const input = JSON.parse(options.body).input; inputs.push(input); return audioReply(wavFile(50 + inputs.length)); } });
+  const ai = createAI({ groqApiKey: 'gsk-test', ttsStyle: '', fetchImpl: async (_url, options) => { const input = JSON.parse(options.body).input; inputs.push(input); return audioReply(wavFile(50 + inputs.length)); } });
   const result = await ai.speak(long);
   assert.ok(inputs.length >= 3 && inputs.length <= 4, `chunks: ${inputs.length}`);
   for (const input of inputs) { assert.ok(input.length <= 200, `${input.length}`); assert.match(input, /[.]$/); assert.ok(sentences.some(sentence => input.startsWith(sentence.slice(0, 20)))); }
@@ -465,16 +465,26 @@ test('Jarvis voice splits long text on sentence boundaries inside the 200 charac
   assert.equal(joined.length, 44 + total);
   const oversized = 'word '.repeat(120).trim();
   const pieces = [];
-  const solo = createAI({ groqApiKey: 'gsk-test', fetchImpl: async (_url, options) => { pieces.push(JSON.parse(options.body).input); return audioReply(wavFile(5)); } });
+  const solo = createAI({ groqApiKey: 'gsk-test', ttsStyle: '', fetchImpl: async (_url, options) => { pieces.push(JSON.parse(options.body).input); return audioReply(wavFile(5)); } });
   await solo.speak(oversized);
   assert.ok(pieces.length >= 3 && pieces.every(piece => piece.length <= 200), 'one very long sentence is cut at word boundaries');
 });
 
-test('Jarvis voice turns square brackets into parentheses and never sends vocal directions', async () => {
+test("Jarvis voice speaks with the one direction the host sets, and spoken text can never add its own", async () => {
   const inputs = [];
   const ai = createAI({ groqApiKey: 'gsk-test', fetchImpl: async (_url, options) => { inputs.push(JSON.parse(options.body).input); return audioReply(wavFile(5)); } });
   await ai.speak('For [3, -2, 0, 5] it must return 8.   [whisper] Then   explain it.');
-  assert.deepEqual(inputs, ['For (3, -2, 0, 5) it must return 8. (whisper) Then explain it.']);
+  assert.deepEqual(inputs, ['[cheerful] For (3, -2, 0, 5) it must return 8. (whisper) Then explain it.']);
+  assert.equal(ai.ttsStyle, 'cheerful');
+  const plain = [];
+  const none = createAI({ groqApiKey: 'gsk-test', ttsStyle: '', fetchImpl: async (_url, options) => { plain.push(JSON.parse(options.body).input); return audioReply(wavFile(5)); } });
+  await none.speak('Tell me about a project.');
+  assert.deepEqual(plain, ['Tell me about a project.'], 'an empty style sends no direction');
+  const styled = [];
+  const excited = createAI({ groqApiKey: 'gsk-test', ttsStyle: ' Excited]! [whisper ', fetchImpl: async (_url, options) => { styled.push(JSON.parse(options.body).input); return audioReply(wavFile(5)); } });
+  await excited.speak('word '.repeat(120).trim());
+  assert.equal(excited.ttsStyle, 'excited whisper', 'a style keeps only letters and spaces');
+  assert.ok(styled.length >= 3 && styled.every(piece => piece.startsWith('[excited whisper] ') && piece.length <= 200), 'every piece carries the direction and stays inside the limit');
   await assert.rejects(ai.speak('   '), /no text/);
 });
 

@@ -81,7 +81,7 @@ async function speakOnDevice(text: string, mine: number) {
     if (mine !== epoch) return;
     await Speech.stop();
     if (mine !== epoch) return;
-    Speech.speak(text, { rate: 0.95, ...(voice ? { voice } : { language: 'en-US' }) });
+    Speech.speak(text, { rate: 1.03, pitch: 1.1, ...(voice ? { voice } : { language: 'en-US' }) });
   } catch { /* Speech is unavailable or blocked, so the text stays on screen. */ }
 }
 

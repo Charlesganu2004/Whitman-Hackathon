@@ -380,7 +380,7 @@ export function createServer(options = {}) {
       limit(`voice:${userId}`, 20, 60_000);
       if (!ai.voiceAvailable) throw new DomainError('Jarvis voice needs GROQ_API_KEY on the host. The device voice will be used instead.', 503);
       // The same words are never synthesized twice: finished and in-flight results are shared, and the cache stays small.
-      const key = createHash('sha256').update(`${ai.ttsModel}\n${ai.ttsVoice}\n${text}`).digest('hex');
+      const key = createHash('sha256').update(`${ai.ttsModel}\n${ai.ttsVoice}\n${ai.ttsStyle}\n${text}`).digest('hex');
       let result = voiceCache.get(key);
       if (result) { voiceCache.delete(key); voiceCache.set(key, result); }
       else {
