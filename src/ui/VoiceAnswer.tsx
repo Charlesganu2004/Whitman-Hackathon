@@ -13,7 +13,7 @@ export function VoiceAnswer({ prompt, onTranscript, onError, enabled, listen = t
   const state = useAudioRecorderState(recorder);
   const [busy, setBusy] = useState(false);
   const mounted = useRef(true);
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; stopJarvis(); void setAudioModeAsync({ allowsRecording: false }); }; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; stopJarvis(); void setAudioModeAsync({ allowsRecording: false }).catch(() => undefined); }; }, []);
   useEffect(() => {
     if (state.isRecording && state.durationMillis >= 120000) void stop();
   }, [state.durationMillis, state.isRecording]);
@@ -41,11 +41,11 @@ export function VoiceAnswer({ prompt, onTranscript, onError, enabled, listen = t
       const result = await request<{ text: string }>('/ai/transcribe', { base64, mimeType: Platform.OS === 'web' ? 'audio/webm' : 'audio/m4a' });
       if (mounted.current) onTranscript(result.text);
     } catch (error) { if (mounted.current) onError(error instanceof Error ? error.message : 'Transcription failed. You can type your answer.'); }
-    finally { await setAudioModeAsync({ allowsRecording: false }); if (mounted.current) setBusy(false); }
+    finally { await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined); if (mounted.current) setBusy(false); }
   }
   return <View style={{ gap: 12 }}>
     <AudioWave active={state.isRecording || busy} />
-    {listen && <Button title="Hear the interviewer" secondary onPress={() => { stopJarvis(); void Speech.stop().then(() => Speech.speak(prompt, { rate: 0.95 })); }} />}
+    {listen && <Button title="Hear the interviewer" secondary onPress={() => { stopJarvis(); void Speech.stop().then(() => Speech.speak(prompt, { rate: 0.95 })).catch(() => undefined); }} />}
     {enabled ? <Button title={state.isRecording ? `Stop and transcribe · ${Math.floor(state.durationMillis / 1000)}s` : 'Record your answer'} secondary busy={busy} onPress={() => { void (state.isRecording ? stop() : start()); }} /> : <Body muted>Voice transcription needs an AI key on the server. Rehearse aloud, then type your answer for rubric feedback.</Body>}
     {state.isRecording && <Body>Recording. Two-minute maximum. Stop when you finish.</Body>}
   </View>;

@@ -19,7 +19,7 @@ export function AnswerFeedback({ feedback }: { feedback: Feedback }) {
     {feedback.strengths.length > 0 && <View style={{ gap: 10 }}><Label>What worked</Label>{feedback.strengths.map((text, index) => <Body key={`strength-${index}`}>✓ {text}</Body>)}</View>}
     {feedback.improvements.length > 0 && <View style={{ gap: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.line }}><Label>For your next answer</Label>{feedback.improvements.map((text, index) => <Body key={`improvement-${index}`}>{text}</Body>)}</View>}
     {star && <View style={{ gap: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.line }}><Title small>Your STAR story</Title>{Object.entries(star).map(([part, guidance]) => <View key={part} style={{ gap: 8, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: colors.accent }}><Label>{part.charAt(0).toUpperCase() + part.slice(1)}</Label><Body>{guidance}</Body></View>)}</View>}
-    <Button title="Hear coach feedback" secondary onPress={() => { stopJarvis(); void Speech.stop().then(() => Speech.speak(spoken, { rate: 0.95 })); }} />
+    <Button title="Hear coach feedback" secondary onPress={() => { stopJarvis(); void Speech.stop().then(() => Speech.speak(spoken, { rate: 0.95 })).catch(() => undefined); }} />
     <Button title="Stop speaking" secondary onPress={() => { stopJarvis(); }} />
   </Card>;
 }

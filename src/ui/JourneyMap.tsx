@@ -355,7 +355,7 @@ export function JourneyMap({ snapshot }: { snapshot: Snapshot }) {
 
   const scrollRef = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
-  const onScroll = useMemo(() => Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: true }), [scrollX]);
+  const onScroll = useMemo(() => Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: Platform.OS !== 'web' }), [scrollX]);
   const scrollTo = useCallback((x: number, animated: boolean) => scrollRef.current?.scrollTo({ x, y: 0, animated }), []);
 
   const selectStage = useCallback((index: number) => {
